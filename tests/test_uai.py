@@ -97,8 +97,10 @@ class DataEEstado(unittest.TestCase):
 
     def test_situacao_calcula_estado_desde_e_dias(self):
         f = ficha()
+        # 24/11/2026: um «verificado» passou a precisar de prova — este leva link
         f["registos"].append({"data": "2026-11-20", "entrou": "2026-11-20", "tipo": "verificado", "estado": "em obra",
-                              "texto": "começou a obra", "fonte": {"descricao": "vi"}})
+                              "texto": "começou a obra",
+                              "fonte": {"descricao": "vi", "url": "https://exemplo.org/obra"}})
         f["registos"].append({"data": "2026-11-20", "entrou": "2026-11-20", "tipo": "falta saber",
                               "texto": "até quando?", "fonte": {"descricao": "pergunta"}})
         s = uai.situacao(f, dt.date(2026, 11, 30))

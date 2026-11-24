@@ -34,34 +34,34 @@ def ficha_ok(**mudancas):
 class AFichaDePessoa(unittest.TestCase):
 
     def test_uma_pessoa_sem_autorizacao_nao_entra(self):
-        erros, _ = uai.validar_ficha("dona-maria", ficha_ok(autorizou=None))
+        erros, _ = uai.validar_ficha("joao-antunes", ficha_ok(autorizou=None))
         self.assertTrue(any("autorizou" in e for e in erros), erros)
 
     def test_a_autorizacao_precisa_das_tres_palavras(self):
         for falta in ("por", "quando", "como"):
             a = {"por": "João", "quando": "2026-11-23", "como": "disse em voz"}
             a.pop(falta)
-            erros, _ = uai.validar_ficha("dona-maria", ficha_ok(autorizou=a))
+            erros, _ = uai.validar_ficha("joao", ficha_ok(autorizou=a))
             self.assertTrue(any(falta in e for e in erros), f"faltava {falta}: {erros}")
 
     def test_o_modo_de_autorizar_tem_de_ser_dos_da_casa(self):
         a = {"por": "João", "quando": "2026-11-23", "como": "talvez"}
-        erros, _ = uai.validar_ficha("dona-maria", ficha_ok(autorizou=a))
+        erros, _ = uai.validar_ficha("joao", ficha_ok(autorizou=a))
         self.assertTrue(any("autorizou.como" in e for e in erros), erros)
 
     def test_quem_contou_continua_proibido_mas_quem_autorizou_nao(self):
         """A distinção central: o arquivo não guarda quem contou — guarda quem autorizou."""
         f = ficha_ok()
         f["autorizou"]["quem"] = "alguém"
-        erros, _ = uai.validar_ficha("dona-maria", f)
+        erros, _ = uai.validar_ficha("joao", f)
         self.assertTrue(any("«quem»" in e for e in erros), erros)
         # e «por» passa: é o nome de quem disse sim, e fica à vista
-        self.assertFalse(any("autorizou.por" in e for e in uai.validar_ficha("dona-maria", ficha_ok())[0]))
+        self.assertFalse(any("autorizou.por" in e for e in uai.validar_ficha("joao", ficha_ok())[0]))
 
     def test_nao_pode_ser_lugar_e_pessoa_ao_mesmo_tempo(self):
         f = ficha_ok()
         f["lugar"] = {"nome": "Praça"}
-        erros, _ = uai.validar_ficha("dona-maria", f)
+        erros, _ = uai.validar_ficha("joao", f)
         self.assertTrue(any("OU" in e for e in erros), erros)
 
     def test_a_pessoa_precisa_de_nome(self):
@@ -70,13 +70,13 @@ class AFichaDePessoa(unittest.TestCase):
 
     def test_onde_vive_com_numero_avisa(self):
         f = ficha_ok(pessoa={"nome": "João", "onde_vive": "Rua das Flores, 210"})
-        erros, avisos = uai.validar_ficha("dona-maria", f)
+        erros, avisos = uai.validar_ficha("joao", f)
         self.assertEqual(erros, [])
         self.assertTrue(any("número" in a for a in avisos), avisos)
 
     def test_a_retirada_tira_a_ficha_do_sitio(self):
         f = ficha_ok(retirada={"quando": "2026-11-23", "pedido_por": "Maria do Coreto"})
-        erros, avisos = uai.validar_ficha("dona-maria", f)
+        erros, avisos = uai.validar_ficha("joao", f)
         self.assertEqual(erros, [], erros)
         self.assertFalse(uai.de_pe(f))
 
@@ -86,9 +86,9 @@ class AFichaDePessoa(unittest.TestCase):
         self.assertTrue(any("retirada" in e for e in erros), erros)
 
     def test_a_retirada_precisa_de_quem_a_pediu_e_do_dia(self):
-        erros, _ = uai.validar_ficha("dona-maria", ficha_ok(retirada={"pedido_por": "ele"}))
+        erros, _ = uai.validar_ficha("joao", ficha_ok(retirada={"pedido_por": "ele"}))
         self.assertTrue(any("retirada.quando" in e for e in erros), erros)
-        erros, _ = uai.validar_ficha("dona-maria", ficha_ok(retirada={"quando": "2026-11-23"}))
+        erros, _ = uai.validar_ficha("joao", ficha_ok(retirada={"quando": "2026-11-23"}))
         self.assertTrue(any("pedido_por" in e for e in erros), erros)
 
     def test_uma_pessoa_grava_em_gente_nao_em_fichas(self):
@@ -111,22 +111,16 @@ class AFichaDePessoa(unittest.TestCase):
 class OSitioDasPessoas(unittest.TestCase):
 
     def test_a_lista_nao_mostra_quem_saiu(self):
-        """Quem saiu tem de ser OUTRA pessoa — senão o teste não prende nada.
+        de_pe = {"joao": ficha_ok()}
+        retirada = ficha_ok(retirada={"quando": "2026-11-23", "pedido_por": "ele"})
+        pagina = uai.pagina_gente({"joao": ficha_ok(), "maria": retirada})
+        self.assertIn("Maria do Coreto", pagina)
+        self.assertNotIn("Maria", pagina, "quem pediu para sair não aparece na lista")
+        self.assertIn("retirada", pagina, "mas fica dito que alguém saiu")
+        del de_pe
 
-        (24/11/2026: este teste afirmava `assertNotIn("Maria", ...)` e «Maria» nunca esteve na
-        ficha de exemplo — passava por ser VAZIO. Aqui a pessoa que sai é distinta.)
-        """
-        saiu = ficha_ok(
-            pessoa={"nome": "Zefa do Alto", "se_chama": "Dona Zefa", "oficio": "benze"},
-            autorizou={"por": "Zefa do Alto", "quando": "2026-11-23", "como": "disse em voz"},
-            retirada={"quando": "2026-11-23", "pedido_por": "ela própria"},
-        )
-        pagina = uai.pagina_gente({"dona-maria": ficha_ok(), "zefa-do-alto": saiu})
-        self.assertIn("Maria do Coreto", pagina, "quem ficou na lista tem o nome que usa")
-        self.assertNotIn("Zefa", pagina, "quem pediu para sair nao aparece na lista")
-        self.assertIn("retirada", pagina, "mas fica dito que alguem saiu")
     def test_a_pagina_de_uma_pessoa_diz_quem_autorizou(self):
-        pagina = uai.pagina_pessoa("dona-maria", ficha_ok(), date(2026, 11, 23), [])
+        pagina = uai.pagina_pessoa("joao", ficha_ok(), date(2026, 11, 23), [])
         self.assertIn("autorizou", pagina)
         self.assertIn("Maria do Coreto", pagina)
         self.assertIn("disse em voz", pagina)
@@ -134,7 +128,7 @@ class OSitioDasPessoas(unittest.TestCase):
 
     def test_a_pagina_de_quem_saiu_diz_que_saiu(self):
         f = ficha_ok(retirada={"quando": "2026-11-23", "pedido_por": "Maria do Coreto"})
-        pagina = uai.pagina_pessoa("dona-maria", f, date(2026, 11, 23), [])
+        pagina = uai.pagina_pessoa("joao", f, date(2026, 11, 23), [])
         self.assertIn("pediu para sair", pagina)
         self.assertIn("não se apagou", pagina)
         self.assertIn("Quem sai, sai", pagina)
@@ -145,7 +139,7 @@ class OSitioDasPessoas(unittest.TestCase):
             base = Path(tmp)
             gente = base / "gente"
             gente.mkdir()
-            (gente / "dona-maria.json").write_text(__import__("json").dumps(ficha_ok(), ensure_ascii=False),
+            (gente / "joao.json").write_text(__import__("json").dumps(ficha_ok(), ensure_ascii=False),
                                              encoding="utf-8")
             antigo = uai.GENTE
             uai.GENTE = gente
@@ -153,7 +147,7 @@ class OSitioDasPessoas(unittest.TestCase):
                 saida = base / "site"
                 self.assertEqual(uai.construir(saida), [])
                 self.assertTrue((saida / "gente.html").exists())
-                self.assertTrue((saida / "gente" / "dona-maria.html").exists())
+                self.assertTrue((saida / "gente" / "joao.html").exists())
                 self.assertIn("Maria do Coreto", (saida / "gente.html").read_text(encoding="utf-8"))
             finally:
                 uai.GENTE = antigo

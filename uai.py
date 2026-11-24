@@ -223,8 +223,14 @@ def _validar_pessoa(ficha: dict) -> tuple[list[str], list[str]]:
 
 
 def validar_ficha(id_: str, ficha: dict, fotos: dict | None = None,
-                   fichas: dict | None = None, gente: dict | None = None) -> tuple[list[str], list[str]]:
-    """Devolve (erros, avisos). Erro impede a ficha de entrar; aviso mostra-se na página."""
+                   fichas: dict | None = None, gente: dict | None = None,
+                   na_porta: bool = False) -> tuple[list[str], list[str]]:
+    """Devolve (erros, avisos). Erro impede a ficha de entrar; aviso mostra-se na página.
+
+    `na_porta=True` é o crivo da porta (24/11/2026, achado do Chagas): uma ficha NOVA que diga
+    «verificado» sem prova (link ou foto do acervo) é **recusada** — não avisada. O que já está
+    dentro da estante não cai: o selo é que não se mostra (ver `_registo_li` e `situacao`).
+    """
     fotos = fotos_do_acervo() if fotos is None else fotos
     if fichas is None or gente is None:
         fichas_todas = carregar()
@@ -334,7 +340,10 @@ def validar_ficha(id_: str, ficha: dict, fotos: dict | None = None,
         if foto is not None and foto not in fotos:
             erros.append(f"{onde}: a foto «{foto}» não está no acervo (acervo/fotos/acervo.json)")
         if r.get("tipo") == "verificado" and not (url or foto):
-            avisos.append(f"{onde}: prova por juntar — verificado, mas sem foto no acervo nem link")
+            # 24/11/2026 (Chagas): o barbeiro da UAI é o selo emprestado. Na porta, recusa-se;
+            # na estante, o selo não se mostra — a ficha fica marcada «prova por juntar».
+            texto = f"{onde}: prova por juntar — «verificado» sem foto no acervo nem link"
+            (erros if na_porta else avisos).append(texto)
 
     # 23/11/2026 — o laço: um registo que toca outra ficha, e essa ficha tem retirada
     for i, r in enumerate(registos, 1):
@@ -451,6 +460,10 @@ def situacao(ficha: dict, hoje: dt.date) -> dict:
         cuidado.append("adormecida")
     if regs[-1]["tipo"] == "contesta":
         cuidado.append("contestada")
+    # 24/11/2026: um selo emprestado é um cuidado — a ficha pede a prova, e não a tem
+    if any(x["tipo"] == "verificado" and not (x.get("fonte", {}).get("url") or x.get("fonte", {}).get("foto"))
+           for x in regs):
+        cuidado.append("prova por juntar")
     return {
         "estado": ultimo["estado"] if ultimo else None,
         "desde": desde,
@@ -653,8 +666,16 @@ def _chip_estado(s: dict) -> str:
 
 
 def _chips_cuidado(s: dict) -> str:
-    rotulo = {"broto": "broto — ninguém viu nem contou ainda", "adormecida": "adormecida — quem a acorda?", "contestada": "contestada"}
-    return "".join(f'<span class="cuidado">{e(rotulo[c])}</span>' for c in s["cuidado"])
+    # 24/11/2026: faltava aqui o «esperando_resposta» (entrou a 23/11) — uma ficha só com pedidos
+    # rebentava a página. E um sinal novo nunca deve derrubar a folha: usa-se `get`.
+    rotulo = {
+        "broto": "broto — ninguém viu nem contou ainda",
+        "adormecida": "adormecida — quem a acorda?",
+        "contestada": "contestada",
+        "esperando_resposta": "esperando resposta — bateu à porta e ninguém abriu",
+        "prova por juntar": "diz «verificado» e não traz prova — o selo por juntar",
+    }
+    return "".join(f'<span class="cuidado">{e(rotulo.get(c, c))}</span>' for c in s["cuidado"])
 
 
 def _onde_texto(id_: str, onde: dict, fora: set | frozenset = frozenset()) -> str:
@@ -751,22 +772,10 @@ def pagina_lugar(id_: str, f: dict, hoje: dt.date, avisos: list[str], onde: dict
     onde = onde or {}
     s = situacao(f, hoje)
     selos = carimbos(f)
-    regs = []
-    for i, r in enumerate(f["registos"]):
-        quando = data_curta(r["data"]) if r.get("data") else r.get("epoca", "")
-        fonte = r["fonte"]
-        extra = ""
-        if fonte.get("url"):
-            extra += f' · <a href="{e(fonte["url"])}" rel="noopener">ver a fonte</a>'
-        if fonte.get("foto"):
-            extra += f' · <a href="acervo/{e(fonte["foto"])}">a foto</a>'
-        estado = f' <span class="estado e-{_classe(r["estado"])}">{e(r["estado"])}</span>' if r.get("estado") else ""
-        tipo = r["tipo"].replace(" ", "-")
-        regs.append(f"""<li class="registo t-{e(tipo)}" id="r{i + 1}">
-<div class="topo"><span class="tipo t-{e(tipo)}" title="{e(TIPOS[r["tipo"]])}">{e(r["tipo"])}</span>
-<span class="quando">{e(quando)}</span>{estado}</div>
-<p>{e(r["texto"])}</p>
-<p class="fonte">fonte: {e(fonte["descricao"])}{extra} · entrou na UAI a {e(data_curta(r["entrou"]))}</p></li>""")
+    # 24/11/2026: uma régua só. A ficha do lugar tinha a sua PRÓPRIA cópia deste desenho —
+    # e foi por uma função gémea que o selo «verificado» escapou à regra da prova.
+    # O desenho dos registos vive num sítio só: `_registo_li`.
+    regs = [_registo_li(r, i + 1) for i, r in enumerate(f["registos"])]
     av = ""
     if avisos:
         av = '<div class="avisos">O que esta ficha ainda pede:<ul>' + "".join(f"<li>{e(a)}</li>" for a in avisos) + "</ul></div>"
@@ -810,7 +819,12 @@ As fotos antigas de família e do Centro de Memória não se copiam: pedem-se.</
 
 
 def _registo_li(r: dict, i: int) -> str:
-    """Um registo, como aparece na folha — o mesmo desenho para lugares e para gente."""
+    """Um registo, como aparece na folha — o mesmo desenho para lugares e para gente.
+
+    24/11/2026 (achado do Chagas): **um selo «verificado» sem prova não se mostra.**
+    Se o registo diz «verificado» e não traz link nem foto do acervo, o selo é rebaixado
+    a «prova por juntar» — a ficha conta o que sabe, e não empresta autoridade que não tem.
+    """
     quando = data_curta(r["data"]) if r.get("data") else r.get("epoca", "")
     fonte = r["fonte"]
     extra = ""
@@ -819,12 +833,17 @@ def _registo_li(r: dict, i: int) -> str:
     if fonte.get("foto"):
         extra += f' · <a href="acervo/{e(fonte["foto"])}">a foto</a>'
     estado = f' <span class="estado e-{_classe(r["estado"])}">{e(r["estado"])}</span>' if r.get("estado") else ""
-    tipo = r["tipo"].replace(" ", "-")
+    emprestado = r["tipo"] == "verificado" and not (fonte.get("url") or fonte.get("foto"))
+    rotulo = "prova por juntar" if emprestado else r["tipo"]
+    titulo = ("diz «verificado», mas não traz prova: nem link, nem foto no acervo — o selo num se empresta"
+              if emprestado else TIPOS[r["tipo"]])
+    tipo = "falta" if emprestado else r["tipo"].replace(" ", "-")
+    aviso = ' <b class="prova-por-juntar">prova por juntar</b>' if emprestado else ""
     return f"""<li class="registo t-{e(tipo)}" id="r{i}">
-<div class="topo"><span class="tipo t-{e(tipo)}" title="{e(TIPOS[r["tipo"]])}">{e(r["tipo"])}</span>
+<div class="topo"><span class="tipo t-{e(tipo)}" title="{e(titulo)}">{e(rotulo)}</span>
 <span class="quando">{e(quando)}</span>{estado}</div>
 <p>{e(r["texto"])}</p>
-<p class="fonte">fonte: {e(fonte["descricao"])}{extra} · entrou na UAI a {e(data_curta(r["entrou"]))}</p></li>"""
+<p class="fonte">fonte: {e(fonte["descricao"])}{extra}{aviso} · entrou na UAI a {e(data_curta(r["entrou"]))}</p></li>"""
 
 
 def pagina_pessoa(id_: str, f: dict, hoje: dt.date, avisos: list[str]) -> str:
@@ -1144,6 +1163,14 @@ def receber(entrega: dict, pasta: Path | None = None) -> tuple[str, list[str]]:
             return id_, [f"já existe a ficha «{id_}» — acrescente a ela"]
     pasta = pasta or pasta_de(ficha)
     erros, _ = validar_ficha(id_, ficha)
+    # 24/11/2026 — o crivo da porta julga só o que ENTRA. Um selo emprestado que já estava
+    # na ficha não tem de travar a chegada de um registo novo dele: o passado trata-se
+    # rebaixando o selo (ver `_registo_li`), não fechando a porta a quem vem depois.
+    novos = [entrega["registo"]] if "acrescentar_a" in entrega else list(ficha.get("registos", []))
+    if novos:
+        # atenção à ordem: a régua devolve (erros, avisos) — os erros vêm PRIMEIRO
+        erros_porta, _avisos_porta = validar_ficha(id_, {**ficha, "registos": novos}, na_porta=True)
+        erros += [x for x in erros_porta if "prova por juntar" in x]
     if not erros:
         caminho.write_text(json.dumps(ficha, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return id_, erros
