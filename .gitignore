@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+# a voz de quem contou e a fila de entregas nunca entram no repo
+entregas/audios/
+entregas/textos/
+ouvidos/
+# saídas de construção
+saida/
+/tmp-saida/
