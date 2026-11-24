@@ -103,7 +103,7 @@ class DataEEstado(unittest.TestCase):
                               "fonte": {"descricao": "vi", "url": "https://exemplo.org/obra"}})
         f["registos"].append({"data": "2026-11-20", "entrou": "2026-11-20", "tipo": "falta saber",
                               "texto": "até quando?", "fonte": {"descricao": "pergunta"}})
-        s = uai.situacao(f, dt.date(2026, 11, 30))
+        s = uai.situacao(f, dt.date(2026, 11, 30), FOTOS)
         self.assertEqual((s["estado"], s["desde"], s["dias"], s["perguntas"]), ("em obra", "2026-11-20", 10, 1))
         self.assertEqual(s["cuidado"], [])
 

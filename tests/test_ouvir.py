@@ -47,7 +47,7 @@ class APonteDeVoz(unittest.TestCase):
         self.assertEqual(ouvir.a_espera(), [])
 
     def test_o_slug_nao_deixa_lixo_no_nome(self):
-        self.assertEqual(ouvir.slug("Áudio do Dona Maria!!.ogg"), "audio-do-tio-joao-ogg")
+        self.assertEqual(ouvir.slug("Áudio do Dona Maria!!.ogg"), "audio-do-dona-maria-ogg")
         self.assertEqual(ouvir.slug("..."), "audio")
 
     def test_transcricao_vazia_nao_vira_entrega(self):

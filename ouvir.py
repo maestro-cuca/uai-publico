@@ -3,7 +3,7 @@
 """
 ouvir.py — a UAI ouve quem não escreve (23/11/2026).
 
-PORQUE EXISTE: o app tem de ser simples para quem não vê — o tio João. Para ele, a porta nunca
+PORQUE EXISTE: o app tem de ser simples para quem não vê. Para essa gente, a porta nunca
 foi um ecrã: é um áudio no WhatsApp. Mas um áudio exige alguém que o ouça e passe a história
 para o papel — e o guardião não pode ser essa pessoa para sempre.
 

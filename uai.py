@@ -12,8 +12,9 @@ calcula-se, para que não possa mentir.
 
 As leis que aqui viram código:
   - com procedência: todo registo diz de onde veio (fonte.descricao);
-  - mover é ligar, nunca apagar: os registos já guardados (no último commit)
-    têm de continuar lá, iguais e pela mesma ordem;
+  - mover é ligar, nunca apagar: os registos já guardados têm de continuar lá,
+    iguais e pela mesma ordem — e a ficha traz o seu próprio carimbo (a corrente
+    de selos), para a lei não depender do `git show` (24/11/2026);
   - nunca quem contou: campos de identificação pessoal não entram;
   - cada ficha tem data e estado: calculados, e com «há quanto tempo».
 """
@@ -31,6 +32,7 @@ import sys
 from pathlib import Path
 
 import mapa
+import regua
 
 RAIZ = Path(__file__).resolve().parent
 FICHAS = RAIZ / "fichas"
@@ -111,7 +113,7 @@ TIPOS = {
 }
 DIAS_PARA_ADORMECER = 90
 
-CAMPOS_FICHA = {"lugar", "pessoa", "autorizou", "registos", "retirada"}   # as duas metades: lugar e pessoa
+CAMPOS_FICHA = {"lugar", "pessoa", "autorizou", "registos", "retirada", "carimbos", "selo_retirada"}   # as duas metades: lugar e pessoa
 CAMPOS_LUGAR = {"nome", "referencia"}
 # A ficha de PESSOA (23/11/2026). Campos a mais, e todos com razão de ser:
 #   nome      — o nome dela (não o do registo civil: o que ela usa)
@@ -248,7 +250,8 @@ def validar_ficha(id_: str, ficha: dict, fotos: dict | None = None,
     genero = "pessoa" if "pessoa" in ficha else "lugar"
     if "pessoa" in ficha and "lugar" in ficha:
         erros.append("uma ficha é de um lugar OU de uma pessoa — não das duas coisas")
-    permitidos = {"pessoa", "autorizou", "registos", "retirada"} if genero == "pessoa" else {"lugar", "registos"}
+    permitidos = ({"pessoa", "autorizou", "registos", "retirada"} if genero == "pessoa"
+                  else {"lugar", "registos"}) | {"carimbos", "selo_retirada"}
     for k in set(ficha) - permitidos - CAMPOS_PROIBIDOS:
         erros.append(f"campo desconhecido na ficha: «{k}»")
 
@@ -339,9 +342,11 @@ def validar_ficha(id_: str, ficha: dict, fotos: dict | None = None,
         foto = fonte.get("foto")
         if foto is not None and foto not in fotos:
             erros.append(f"{onde}: a foto «{foto}» não está no acervo (acervo/fotos/acervo.json)")
-        if r.get("tipo") == "verificado" and not (url or foto):
+        if r.get("tipo") == "verificado" and regua.avaliar(r, fotos)["verificado_sem_prova"]:
             # 24/11/2026 (Chagas): o barbeiro da UAI é o selo emprestado. Na porta, recusa-se;
             # na estante, o selo não se mostra — a ficha fica marcada «prova por juntar».
+            # Agora a decisão é UMA só: a régua (regua.avaliar). Uma foto-fantasma — um nome
+            # que o acervo não tem — também não é prova: é promessa de prova.
             texto = f"{onde}: prova por juntar — «verificado» sem foto no acervo nem link"
             (erros if na_porta else avisos).append(texto)
 
@@ -354,13 +359,25 @@ def validar_ficha(id_: str, ficha: dict, fotos: dict | None = None,
                 if outra and outra.get("retirada"):
                     avisos.append(f"registo {i}: toca a ficha «{t}», que tem retirada — avisa quem guarda")
 
+    # 24/11/2026 — o carimbo próprio: a ficha traz a corrente de selos que tinha quando foi
+    # gravada. Com selos, eles têm de fechar — e isso não depende do `git show`. Na porta
+    # (um registo que chega), não se julga o carimbo da ficha inteira: julga-se o que entra.
+    if not na_porta:
+        erros += carimbo_quebrado(ficha)
+
     if not any("estado" in r for r in registos if isinstance(r, dict)):
         avisos.append("ainda sem estado: nenhum registo disse como a coisa está")
     return erros, avisos
 
 
 def nunca_apagar(antiga: dict | None, nova: dict) -> list[str]:
-    """Lei 3. Os registos já guardados continuam lá, iguais e pela mesma ordem."""
+    """Lei 3. Os registos já guardados continuam lá, iguais e pela mesma ordem.
+
+    `antiga` pode vir do disco (a previsão de uma entrega) ou do último commit
+    (`versao_anterior`). Desde 24/11/2026 a lei não depende do git: o carimbo próprio
+    da ficha (`carimbo_quebrado`) denuncia a mudança sozinho. Esta comparação fica
+    como segunda testemunha, quando há uma versão anterior para comparar.
+    """
     if not antiga:
         return []
     erros = []
@@ -441,8 +458,14 @@ def _dia(s: str | None) -> dt.date | None:
     return None
 
 
-def situacao(ficha: dict, hoje: dt.date) -> dict:
-    """Estado de hoje, desde quando, há quantos dias, e os sinais do zelo."""
+def situacao(ficha: dict, hoje: dt.date, fotos: dict | None = None) -> dict:
+    """Estado de hoje, desde quando, há quantos dias, e os sinais do zelo.
+
+    `fotos` é o acervo — a régua de prova precisa dele para saber se a foto que um
+    registo nomeia existe mesmo (uma foto-fantasma não é prova). Sem `fotos`, lê-se
+    o acervo do disco.
+    """
+    fotos = fotos_do_acervo() if fotos is None else fotos
     regs = ficha["registos"]
     com_estado = [r for r in regs if "estado" in r]
     ultimo = com_estado[-1] if com_estado else None
@@ -460,9 +483,9 @@ def situacao(ficha: dict, hoje: dt.date) -> dict:
         cuidado.append("adormecida")
     if regs[-1]["tipo"] == "contesta":
         cuidado.append("contestada")
-    # 24/11/2026: um selo emprestado é um cuidado — a ficha pede a prova, e não a tem
-    if any(x["tipo"] == "verificado" and not (x.get("fonte", {}).get("url") or x.get("fonte", {}).get("foto"))
-           for x in regs):
+    # 24/11/2026: um selo emprestado é um cuidado — a ficha pede a prova, e não a tem.
+    # A decisão é UMA só: a régua (regua.avaliar). Uma foto-fantasma também cai aqui.
+    if any(regua.avaliar(x, fotos)["verificado_sem_prova"] for x in regs):
         cuidado.append("prova por juntar")
     return {
         "estado": ultimo["estado"] if ultimo else None,
@@ -479,15 +502,73 @@ def _canonico(obj) -> bytes:
     return json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
+def _cabeca(ficha: dict) -> dict:
+    """O que identifica a ficha e não se acrescenta: o lugar, ou a pessoa com a sua palavra."""
+    if "pessoa" in ficha:
+        return {"pessoa": ficha.get("pessoa", {}), "autorizou": ficha.get("autorizou", {})}
+    return {"lugar": ficha.get("lugar", {})}
+
+
 def carimbos(ficha: dict) -> list[str]:
     """Corrente de SHA-256: cada registo sela o anterior. Mudar um registo
-    antigo muda todos os carimbos dali para a frente — vê-se a olho."""
-    h = hashlib.sha256(_canonico(ficha.get("lugar", {}))).hexdigest()
+    antigo muda todos os carimbos dali para a frente — vê-se a olho.
+    O primeiro selo sela a cabeça: o lugar, ou a pessoa e a sua autorização."""
+    h = hashlib.sha256(_canonico(_cabeca(ficha))).hexdigest()
     saida = []
-    for r in ficha["registos"]:
+    for r in ficha.get("registos") or []:
         h = hashlib.sha256(h.encode() + _canonico(r)).hexdigest()
         saida.append(h)
     return saida
+
+
+def selo_retirada(ficha: dict) -> str | None:
+    """O selo da retirada — a única excepção à lei, e também ela não se apaga (23/11/2026)."""
+    r = ficha.get("retirada")
+    if r is None:
+        return None
+    return hashlib.sha256(_canonico(r)).hexdigest()
+
+
+def carimbo_quebrado(ficha: dict) -> list[str]:
+    """A lei «nada se apaga» sem depender do git (24/11/2026).
+
+    A ficha traz o seu próprio carimbo: a corrente de selos que ela tinha quando foi
+    gravada. Se um registo antigo foi mudado ou tirado, os selos guardados já não fecham
+    com os registos que lá estão — e vê-se sem `git show`, sem repositório, sem nada.
+    Ficha sem carimbo (antiga) não é erro: o `selar` põe-lhe o carimbo.
+    """
+    guardados = ficha.get("carimbos")
+    if guardados is not None:
+        if not isinstance(guardados, list) or not all(isinstance(c, str) for c in guardados):
+            return ["«carimbos» tem de ser uma lista de selos (SHA-256 em hexadecimal)"]
+        registos = ficha.get("registos") or []
+        if len(guardados) != len(registos):
+            return [f"«carimbos» tem {len(guardados)} selo(s) e a ficha tem {len(registos)} "
+                    f"registo(s) — um registo antigo foi tirado (nada se apaga)"]
+        for i, (guardado, esperado) in enumerate(zip(guardados, carimbos(ficha)), 1):
+            if guardado != esperado:
+                return [f"o carimbo {i} não fecha — o registo {i} foi mudado depois de selado "
+                        f"(nada se apaga: corrige-se acrescentando, com a data ao lado)"]
+    # a retirada também não se apaga — o selo dela fica na ficha
+    selo = ficha.get("selo_retirada")
+    if selo is not None:
+        if ficha.get("retirada") is None:
+            return ["há um selo de retirada sem retirada — a retirada não se apaga: quem saiu, saiu"]
+        if selo != selo_retirada(ficha):
+            return ["o selo da retirada não fecha — a retirada foi mudada (quem saiu, saiu)"]
+    return []
+
+
+def selar(ficha: dict) -> None:
+    """Põe o carimbo próprio dentro da ficha (24/11/2026).
+
+    Só calcula e guarda — quem chama verifica primeiro com `carimbo_quebrado`, para
+    não selar por cima de uma ficha que já não fecha.
+    """
+    ficha["carimbos"] = carimbos(ficha)
+    selo = selo_retirada(ficha)
+    if selo is not None:
+        ficha["selo_retirada"] = selo
 
 
 # ───────────────────────── o site ─────────────────────────
@@ -818,13 +899,17 @@ As fotos antigas de família e do Centro de Memória não se copiam: pedem-se.</
     return pagina("As fotos guardadas — UAI", corpo, "Fotografias de Passos com autor, licença e origem.")
 
 
-def _registo_li(r: dict, i: int) -> str:
+def _registo_li(r: dict, i: int, fotos: dict | None = None) -> str:
     """Um registo, como aparece na folha — o mesmo desenho para lugares e para gente.
 
     24/11/2026 (achado do Chagas): **um selo «verificado» sem prova não se mostra.**
-    Se o registo diz «verificado» e não traz link nem foto do acervo, o selo é rebaixado
-    a «prova por juntar» — a ficha conta o que sabe, e não empresta autoridade que não tem.
+    Se o registo diz «verificado» e não traz prova, o selo é rebaixado a «prova por
+    juntar» — a ficha conta o que sabe, e não empresta autoridade que não tem.
+
+    A decisão é a MESMA dos outros leitores: a régua (`regua.avaliar`). Uma foto-
+    fantasma (nome que o acervo não tem) não segura o selo.
     """
+    fotos = fotos_do_acervo() if fotos is None else fotos
     quando = data_curta(r["data"]) if r.get("data") else r.get("epoca", "")
     fonte = r["fonte"]
     extra = ""
@@ -833,7 +918,7 @@ def _registo_li(r: dict, i: int) -> str:
     if fonte.get("foto"):
         extra += f' · <a href="acervo/{e(fonte["foto"])}">a foto</a>'
     estado = f' <span class="estado e-{_classe(r["estado"])}">{e(r["estado"])}</span>' if r.get("estado") else ""
-    emprestado = r["tipo"] == "verificado" and not (fonte.get("url") or fonte.get("foto"))
+    emprestado = regua.avaliar(r, fotos)["verificado_sem_prova"]
     rotulo = "prova por juntar" if emprestado else r["tipo"]
     titulo = ("diz «verificado», mas não traz prova: nem link, nem foto no acervo — o selo num se empresta"
               if emprestado else TIPOS[r["tipo"]])
@@ -858,6 +943,7 @@ def pagina_pessoa(id_: str, f: dict, hoje: dt.date, avisos: list[str]) -> str:
     """
     p = f["pessoa"]
     s = situacao(f, hoje)
+    selos = carimbos(f)  # 24/11/2026 — a ficha de pessoa também traz o seu carimbo
     regs = "".join(_registo_li(r, i + 1) for i, r in enumerate(f["registos"]))
     av = ""
     if avisos:
@@ -880,7 +966,10 @@ def pagina_pessoa(id_: str, f: dict, hoje: dt.date, avisos: list[str]) -> str:
 <ul><li>pedido em {e(data_curta(str(r.get("quando", ""))))} — por {e(r.get("pedido_por", ""))}</li>
 <li>a ficha não se apagou: ficou guardada, e não aparece no sítio. <b>Quem sai, sai.</b></li></ul></div>
 {autorizou}
-<p class="ref">Se esta pessoa quiser voltar, volta — e a retirada fica ao lado, para a história não ser reescrita.</p>"""
+<p class="ref">Se esta pessoa quiser voltar, volta — e a retirada fica ao lado, para a história não ser reescrita.</p>
+<h2>Carimbo</h2>
+<p class="ref">Cada registo sela o anterior (SHA-256). Se alguém mudar um registo antigo, este número muda.</p>
+<p class="carimbo">{e(selos[-1])}</p>"""
         return pagina(f'{p.get("nome", "")} — UAI', corpo,
                       f'{p.get("nome", "")}: ficha retirada a pedido.')
 
@@ -895,7 +984,10 @@ def pagina_pessoa(id_: str, f: dict, hoje: dt.date, avisos: list[str]) -> str:
 {av}
 {autorizou}{nota}
 <p class="ref">Uma pessoa entra na UAI com a sua palavra — e sai com a sua palavra. Não é um lugar,
-e por isso não é tratada como um lugar.</p>"""
+e por isso não é tratada como um lugar.</p>
+<h2>Carimbo</h2>
+<p class="ref">Cada registo sela o anterior (SHA-256). Se alguém mudar um registo antigo, este número muda.</p>
+<p class="carimbo">{e(selos[-1])}</p>"""
     return pagina(f'{p.get("nome", "")} — UAI', corpo,
                   f'{p.get("nome", "")}: quem é, o que faz, e com que autorização entrou.')
 
@@ -1049,6 +1141,8 @@ def construir(saida: Path, hoje: dt.date | None = None) -> list[str]:
     avisos_gente = {}
     for id_, f in gente.items():
         if not de_pe(f):
+            # quem saiu, saiu — mas o carimbo da ficha retirada também tem de fechar (24/11/2026)
+            problemas += [f"{id_}: {x}" for x in carimbo_quebrado(f)]
             continue
         erros, avisos = validar_ficha(id_, f, fotos, fichas=fichas, gente=gente)
         erros += nunca_apagar(versao_anterior(id_, pasta="gente"), f)
@@ -1145,6 +1239,11 @@ def receber(entrega: dict, pasta: Path | None = None) -> tuple[str, list[str]]:
         if caminho is None:
             return id_, [f"não há ficha «{id_}»"]
         ficha = json.loads(caminho.read_text(encoding="utf-8"))
+        # 24/11/2026 — antes de acrescentar, o carimbo que a ficha já traz tem de fechar.
+        # Se não fechar, um registo antigo foi mudado: não se sela por cima (isso lavaria a mudança).
+        erros_carimbo = carimbo_quebrado(ficha)
+        if erros_carimbo:
+            return id_, erros_carimbo
         ficha["registos"].append(entrega.get("registo"))
     else:
         if "pessoa" in entrega:
@@ -1162,6 +1261,9 @@ def receber(entrega: dict, pasta: Path | None = None) -> tuple[str, list[str]]:
         if caminho.exists():
             return id_, [f"já existe a ficha «{id_}» — acrescente a ela"]
     pasta = pasta or pasta_de(ficha)
+    # 24/11/2026 — a ficha leva o seu próprio carimbo: sela-se já com os registos que vai gravar.
+    # O `validar_ficha` abaixo volta a verificar o carimbo (agora com a corrente nova).
+    selar(ficha)
     erros, _ = validar_ficha(id_, ficha)
     # 24/11/2026 — o crivo da porta julga só o que ENTRA. Um selo emprestado que já estava
     # na ficha não tem de travar a chegada de um registo novo dele: o passado trata-se
@@ -1211,6 +1313,10 @@ def prever_entrega(entrega: dict, pasta: Path | None = None,
         antiga = json.loads(caminho.read_text(encoding="utf-8"))
         nova = json.loads(caminho.read_text(encoding="utf-8"))
         nova["registos"] = antiga["registos"] + [entrega.get("registo")]
+        # o carimbo antigo não se leva para a previsão: a corrente vai ser outra. Mas o carimbo
+        # que a ficha já traz tem de fechar — é a lei «nada se apaga» a falar sozinha, sem git.
+        nova.pop("carimbos", None)
+        nova.pop("selo_retirada", None)
     else:
         nova = {"lugar": entrega.get("lugar", {}), "registos": entrega.get("registos", [])}
         antiga = None
@@ -1219,7 +1325,7 @@ def prever_entrega(entrega: dict, pasta: Path | None = None,
             return id_, [f"já existe a ficha «{id_}» — acrescente a ela"], []
     erros, avisos = validar_ficha(id_, nova, fotos)
     if antiga is not None:
-        erros = list(erros) + nunca_apagar(antiga, nova)
+        erros = list(erros) + carimbo_quebrado(antiga) + nunca_apagar(antiga, nova)
     return id_, list(erros), list(avisos)
 
 
@@ -1488,6 +1594,34 @@ def main(argv: list[str]) -> int:
             f"- {dt.date.today().isoformat()} · {ficheiro.name} · {motivo}\n")
         print(f"✓ devolvida · {ficheiro.name} → entregas/devolvidas/ · motivo registado")
         return 0
+
+    if cmd == "selar":
+        # 24/11/2026 — põe o carimbo próprio nas fichas que ainda não o têm (e confirma as outras).
+        # A lei «nada se apaga» passa a viajar dentro da ficha: não depende do `git show`.
+        n, maus = 0, 0
+        for pasta in (FICHAS, GENTE):
+            if not pasta.is_dir():
+                continue
+            for caminho in sorted(pasta.glob("*.json")):
+                ficha = json.loads(caminho.read_text(encoding="utf-8"))
+                erros = carimbo_quebrado(ficha)
+                if erros:
+                    maus += 1
+                    print(f"✗ {caminho.name}")
+                    for x in erros:
+                        print(f"    erro: {x}")
+                    continue
+                antes = json.dumps(ficha, ensure_ascii=False, sort_keys=True)
+                selar(ficha)
+                depois = json.dumps(ficha, ensure_ascii=False, sort_keys=True)
+                if depois != antes:
+                    caminho.write_text(json.dumps(ficha, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                    n += 1
+                    print(f"✓ {caminho.name} selada")
+                else:
+                    print(f"✓ {caminho.name} já selada")
+        print(f"{n} ficha(s) selada(s) · {maus} com o carimbo quebrado")
+        return 1 if maus else 0
 
     if cmd == "validar":
         fichas, fotos, ruim = carregar(), fotos_do_acervo(), 0

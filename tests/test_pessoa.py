@@ -34,7 +34,7 @@ def ficha_ok(**mudancas):
 class AFichaDePessoa(unittest.TestCase):
 
     def test_uma_pessoa_sem_autorizacao_nao_entra(self):
-        erros, _ = uai.validar_ficha("joao-antunes", ficha_ok(autorizou=None))
+        erros, _ = uai.validar_ficha("maria-do-coreto", ficha_ok(autorizou=None))
         self.assertTrue(any("autorizou" in e for e in erros), erros)
 
     def test_a_autorizacao_precisa_das_tres_palavras(self):
@@ -111,13 +111,15 @@ class AFichaDePessoa(unittest.TestCase):
 class OSitioDasPessoas(unittest.TestCase):
 
     def test_a_lista_nao_mostra_quem_saiu(self):
-        de_pe = {"joao": ficha_ok()}
-        retirada = ficha_ok(retirada={"quando": "2026-11-23", "pedido_por": "ele"})
-        pagina = uai.pagina_gente({"joao": ficha_ok(), "maria": retirada})
-        self.assertIn("Maria do Coreto", pagina)
-        self.assertNotIn("Maria", pagina, "quem pediu para sair não aparece na lista")
+        """24/11/2026: este teste afirmava assertNotIn("Maria", …) e «Maria» NUNCA existiu
+        na ficha de exemplo — passava por ser VAZIO. Aqui a pessoa que sai é distinta."""
+        saiu = ficha_ok(pessoa={"nome": "Zefa do Alto", "se_chama": "Dona Zefa", "oficio": "benze"},
+                        autorizou={"por": "Zefa do Alto", "quando": "2026-11-23", "como": "disse em voz"},
+                        retirada={"quando": "2026-11-23", "pedido_por": "ela própria"})
+        pagina = uai.pagina_gente({"joao": ficha_ok(), "zefa-do-alto": saiu})
+        self.assertIn("Maria do Coreto", pagina, "quem ficou está na lista (a lista mostra o nome)")
+        self.assertNotIn("Zefa", pagina, "quem pediu para sair não aparece na lista")
         self.assertIn("retirada", pagina, "mas fica dito que alguém saiu")
-        del de_pe
 
     def test_a_pagina_de_uma_pessoa_diz_quem_autorizou(self):
         pagina = uai.pagina_pessoa("joao", ficha_ok(), date(2026, 11, 23), [])
