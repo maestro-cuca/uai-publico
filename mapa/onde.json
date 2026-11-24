@@ -1,0 +1,23 @@
+{
+  "_leia": "Onde fica cada ficha no mapa. Também com procedência: um ponto sem fonte não entra. «aproximado» desenha-se como uma mancha do tamanho da dúvida (raio_m), nunca como um alfinete certo.",
+  "coreto-da-praca-da-matriz": {
+    "lat": -20.71940,
+    "lon": -46.61045,
+    "precisao": "aproximado",
+    "raio_m": 150,
+    "fonte": {
+      "descricao": "a Igreja Matriz Senhor Bom Jesus dos Passos no OpenStreetMap (way 292873257); o coreto fica na praça da Matriz — o ponto exato ainda falta saber",
+      "url": "https://www.openstreetmap.org/way/292873257"
+    }
+  },
+  "praca-alto-dos-passaros": {
+    "lat": -20.64139,
+    "lon": -46.50529,
+    "precisao": "aproximado",
+    "raio_m": 1200,
+    "fonte": {
+      "descricao": "a referência da própria ficha («a 1 km do centro» do Glória) a partir do centro de São João Batista do Glória no OpenStreetMap (node 246673156); o loteamento ainda não está no mapa livre",
+      "url": "https://www.openstreetmap.org/node/246673156"
+    }
+  }
+}

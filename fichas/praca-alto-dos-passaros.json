@@ -1,0 +1,54 @@
+{
+  "lugar": {
+    "nome": "Praça do Alto dos Pássaros",
+    "referencia": "Residencial Alto dos Pássaros · São João Batista do Glória · a 1 km do centro"
+  },
+  "registos": [
+    {
+      "data": "2026-11-05",
+      "entrou": "2026-11-19",
+      "tipo": "verificado",
+      "estado": "floresce",
+      "texto": "A praça existe e está pronta: piso em blocos intertravados, iluminação LED, grama, bancos de madeira, duas lixeiras de madeira com placas, palmeiras e caminhos curvos.",
+      "fonte": {
+        "descricao": "fotografias do navegador, tiradas no local a 5/11/2026"
+      }
+    },
+    {
+      "data": "2026-11-05",
+      "entrou": "2026-11-19",
+      "tipo": "verificado",
+      "texto": "Fica no alto — e as luzes da vila do Glória veem-se em baixo, no vale. A linha de postes segue a estrada loteamento acima.",
+      "fonte": {
+        "descricao": "fotografias do navegador, tiradas no local a 5/11/2026"
+      }
+    },
+    {
+      "data": "2026-11-05",
+      "entrou": "2026-11-19",
+      "tipo": "leitura",
+      "texto": "A praça está pronta e vazia: é o que um bairro novo é nos primeiros anos. Está à espera de quem a habite.",
+      "fonte": {
+        "descricao": "leitura do navegador no local — não é facto que se veja na foto"
+      }
+    },
+    {
+      "data": "2026-11-05",
+      "entrou": "2026-11-19",
+      "tipo": "falta saber",
+      "texto": "Quem paga a manutenção — a construtora ou a prefeitura? As áreas verdes e institucionais já foram transferidas para o município? A iluminação e as ruas são da rede pública? Há escola e posto de saúde a quantos minutos a pé?",
+      "fonte": {
+        "descricao": "perguntas abertas depois da visita de 5/11/2026"
+      }
+    },
+    {
+      "data": "2026-11-05",
+      "entrou": "2026-11-23",
+      "tipo": "falta saber",
+      "texto": "As fontes dos registos 1 e 2 dizem «fotografias do navegador, tiradas no local a 5/11/2026» — mas essas fotografias não estão no acervo. Lê-se assim, então: quem verificou foi o navegador, ali, com os olhos; a prova é o testemunho dele, e as fotografias estão por juntar. Enquanto não chegarem, os dois registos ficam com a marca «prova por juntar» — de propósito, e não por esquecimento: um selo «verificado» sem prova ao lado é a única coisa que pode apodrecer esta casa.",
+      "fonte": {
+        "descricao": "nota do Mago ao fechar a revisão da casa, 23/11/2026"
+      }
+    }
+  ]
+}

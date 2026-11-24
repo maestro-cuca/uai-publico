@@ -1,0 +1,27 @@
+{
+  "_leia": "Jornadas: caminhadas por lugares que existem — convites do mapa livre («marco», o nome como está no OpenStreetMap) ou fichas da UAI («ficha», o id). Também com procedência. O traço segue as ruas do mapa; na rua, vale o que os olhos virem. Estas duas são propostas da casa, para começar: mude, acrescente, conteste.",
+  "quem-chega-de-onibus": {
+    "nome": "Quem chega de ônibus",
+    "convite": "Da rodoviária até o coreto, pelas praças do caminho. Para quem acabou de chegar — ou para quem nunca reparou.",
+    "paradas": [
+      { "marco": "Terminal Rodoviário Presidente Tancredo Neves" },
+      { "marco": "Praça Santa Helena" },
+      { "marco": "Praça São Francisco" },
+      { "marco": "Praça Lúcio Bittencourt" },
+      { "marco": "Mercado Municipal de Passos" },
+      { "ficha": "coreto-da-praca-da-matriz", "nota": "o ponto exato do coreto ainda falta saber" }
+    ],
+    "fonte": { "descricao": "proposta da casa, a 22/11/2026, sobre os convites do mapa livre (OpenStreetMap)" }
+  },
+  "as-pracas-do-centro": {
+    "nome": "As praças do centro",
+    "convite": "Uma volta curta, de praça em praça. Sente num banco em cada uma.",
+    "paradas": [
+      { "ficha": "coreto-da-praca-da-matriz" },
+      { "marco": "Praça Coronel José Caetano Machado" },
+      { "marco": "Praça Blandina de Andrade" },
+      { "marco": "Praça Trindade" }
+    ],
+    "fonte": { "descricao": "proposta da casa, a 22/11/2026, sobre os convites do mapa livre (OpenStreetMap)" }
+  }
+}

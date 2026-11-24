@@ -1,0 +1,4 @@
+# só para preparar o mapa (ferramentas/preparar_mapa.py); o site em si não precisa de nada
+numpy
+pillow
+contourpy

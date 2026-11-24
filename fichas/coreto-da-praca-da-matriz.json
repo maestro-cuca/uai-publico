@@ -1,0 +1,36 @@
+{
+  "lugar": {
+    "nome": "Coreto da Praça da Matriz",
+    "referencia": "Centro · Passos"
+  },
+  "registos": [
+    {
+      "epoca": "quando a banda tocava aos domingos",
+      "entrou": "2026-11-19",
+      "tipo": "contado",
+      "texto": "A banda tocava no coreto aos domingos. Hoje há silêncio onde havia música.",
+      "fonte": {
+        "descricao": "dito pelo navegador no pedido «Entrar em Passos», 19/11/2026"
+      }
+    },
+    {
+      "data": "2026-11-20",
+      "entrou": "2026-11-20",
+      "tipo": "leitura",
+      "estado": "pede cuidado",
+      "texto": "O coreto não está quebrado. Está calado. O que falta não é obra — é tratamento: música de domingo, não silêncio de segunda.",
+      "fonte": {
+        "descricao": "leitura da casa — quatro vozes chegaram a ela sem se ouvirem, na noite de 20/11/2026"
+      }
+    },
+    {
+      "data": "2026-11-20",
+      "entrou": "2026-11-20",
+      "tipo": "falta saber",
+      "texto": "Quem guarda a chave? Há orçamento para a banda? Os meninos ainda sabem que ali se tocava? Quando foi o último domingo com música?",
+      "fonte": {
+        "descricao": "perguntas abertas pela casa, 20/11/2026"
+      }
+    }
+  ]
+}
