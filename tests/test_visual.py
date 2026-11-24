@@ -73,5 +73,50 @@ class AListaChegaCedo(unittest.TestCase):
         self.assertLessEqual(int(m.group(1)), 25, "no telemóvel, mais de 25vh de mapa é tira")
 
 
+class APortaDeQuemNaoVe(unittest.TestCase):
+    """Vistoria de 24/11/2026 — medida no navegador, não no olho.
+
+    Achados: o «em branco» dava 4,42:1 no fundo verde-mata (o mínimo é 4,5:1),
+    e os botões da barra de acesso tinham 36 px de altura (o dedo pede 44).
+    """
+
+    def _luminancia(self, rgb):
+        def canal(v):
+            v = v / 255
+            return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+        r, g, b = (canal(x) for x in rgb)
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+    def _contraste(self, a, b):
+        la, lb = self._luminancia(a), self._luminancia(b)
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+
+    def _hex(self, s):
+        s = s.lstrip("#")
+        return tuple(int(s[i:i + 2], 16) for i in (0, 2, 4))
+
+    def test_o_em_branco_passa_no_fundo_verde_mata(self):
+        # a cor do TEMA DE SEMPRE (o escuro), não a do tema claro — a primeira ocorrência é a do claro
+        m = re.search(r"--rotulo: #F2EAD3;.*?--e-nenhum:\s*(#[0-9a-fA-F]{6})", CSS, re.S)
+        self.assertIsNotNone(m, "o «em branco» perdeu a cor própria")
+        fundo = self._hex("#0F2A22")  # o verde-mata, o fundo de sempre
+        razao = self._contraste(self._hex(m.group(1)), fundo)
+        self.assertGreaterEqual(razao, 4.5,
+                                f"«em branco» a {razao:.2f}:1 no verde-mata — abaixo do mínimo (4,5:1)")
+
+    def test_os_botoes_da_barra_sao_alvo_de_dedo(self):
+        m = re.search(r"\.acesso button\s*\{[^}]*min-height:\s*(\d+)px", CSS, re.S)
+        self.assertIsNotNone(m, "a barra de acesso perdeu a medida dos botões")
+        self.assertGreaterEqual(int(m.group(1)), 44,
+                                f"botão de {m.group(1)} px — o dedo precisa de 44")
+
+    def test_a_porta_de_voz_existe_e_e_um_botao(self):
+        """A porta de quem não vê é o áudio. A barra é montada pelo acesso.js — verificar os dois."""
+        pagina = uai.pagina_inicio(uai.carregar(), date(2026, 11, 24))
+        self.assertIn("acesso.js", pagina, "a página perdeu o ficheiro que monta a barra de acesso")
+        self.assertIn("ouvir", JS, "o botão «ouvir» desapareceu da barra — é a porta de quem não lê")
+        self.assertIn("speechSynthesis", JS, "sem voz do sistema, o botão não fala")
+
+
 if __name__ == "__main__":
     unittest.main()

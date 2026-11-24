@@ -115,7 +115,7 @@
     --e-pede-cuidado: #e8964c;
     --e-por-fazer: #aaa594;
     --e-em-obra: #b99ad9;
-    --e-nenhum: #8f8a78;
+    --e-nenhum: #928d7a;  /* era #8f8a78 — 4,42:1 no verde-mata; agora 4,59:1 (WCAG AA) */
   }
 }
 
@@ -129,7 +129,7 @@
   --tinta: #F2EAD3; --tinta-suave: #D9CFB4; --tinta-fraca: #BDB396;
   --acento: #FADD00; --acento-vivo: #FADD00; --sobre-acento: #1b1a16;
   --rotulo: #F2EAD3; --rio-texto: #8FD3F5; --sombra: rgb(0 0 0 / .45);
-  --e-floresce: #5cc283; --e-pede-cuidado: #e8964c; --e-por-fazer: #aaa594; --e-em-obra: #b99ad9; --e-nenhum: #8f8a78;
+  --e-floresce: #5cc283; --e-pede-cuidado: #e8964c; --e-por-fazer: #aaa594; --e-em-obra: #b99ad9; --e-nenhum: #928d7a;  /* era #8f8a78 — 4,42:1 no verde-mata; agora 4,59:1 (WCAG AA) */
 
   --px-fundo: #1D4A3A;  /* = a terra: onde o mapa acaba, o chão continua sem degrau */
   --px-terra: #1D4A3A; --px-campo: #2A5A3C; --px-cidade: #7A733D; --px-predio: #A8643F;
@@ -515,14 +515,14 @@ pre { white-space: pre-wrap; word-break: break-word; background: var(--papel-alt
 .acesso button {
   appearance: none; font: 500 13px/1 var(--font-body); color: var(--tinta-suave);
   background: transparent; border: 1px solid var(--linha); border-radius: 999px;
-  padding: 0 12px; min-height: 36px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  padding: 0 12px; min-height: 44px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
 }
 .acesso button span { font-weight: 700; color: var(--acento); }
 .acesso button:hover { border-color: var(--acento-vivo); color: var(--tinta); }
 .acesso button[aria-pressed="true"] { background: var(--tinta); color: var(--papel); border-color: var(--tinta); }
 .acesso button[aria-pressed="true"] span { color: inherit; }
 .aviso-leve { font-size: 13.5px; color: var(--tinta-suave); border: 1px dashed var(--linha); border-radius: 12px; padding: 10px 12px; }
-.aviso-leve button { min-height: 36px; padding: 6px 12px; margin-left: 4px; font-size: 13px; }
+.aviso-leve button { min-height: 44px; padding: 6px 12px; margin-left: 4px; font-size: 13px; }
 
 /* letra maior: tudo o que se lê cresce junto */
 html.letra-grande .painel { zoom: 1.22; }
