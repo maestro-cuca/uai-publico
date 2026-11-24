@@ -56,6 +56,9 @@
   --e-por-fazer: #686456;
   --e-em-obra: #7a55a0;
   --e-nenhum: #6f6a5c;  /* era #8b8574 — 3,21:1; agora 4,70:1 (WCAG AA) */
+  /* os dois estados do tempo (24/11): o adormecer é frio e calado, a raiz é terra firme */
+  --e-adormeceu: #59666c;  /* 5,2:1 no papel */
+  --e-tem-raiz: #6b6234;   /* 5,3:1 no papel */
 
   --font-display: "Fraunces", Georgia, serif;
   --font-body: "Archivo", system-ui, sans-serif;
@@ -116,6 +119,8 @@
     --e-por-fazer: #aaa594;
     --e-em-obra: #b99ad9;
     --e-nenhum: #928d7a;  /* era #8f8a78 — 4,42:1 no verde-mata; agora 4,59:1 (WCAG AA) */
+    --e-adormeceu: #9fb3bd;
+    --e-tem-raiz: #c3bd8f;
   }
 }
 
@@ -130,6 +135,7 @@
   --acento: #FADD00; --acento-vivo: #FADD00; --sobre-acento: #1b1a16;
   --rotulo: #F2EAD3; --rio-texto: #8FD3F5; --sombra: rgb(0 0 0 / .45);
   --e-floresce: #5cc283; --e-pede-cuidado: #e8964c; --e-por-fazer: #aaa594; --e-em-obra: #b99ad9; --e-nenhum: #928d7a;  /* era #8f8a78 — 4,42:1 no verde-mata; agora 4,59:1 (WCAG AA) */
+  --e-adormeceu: #9FB3BD; --e-tem-raiz: #C6C08E;
 
   --px-fundo: #1D4A3A;  /* = a terra: onde o mapa acaba, o chão continua sem degrau */
   --px-terra: #1D4A3A; --px-campo: #2A5A3C; --px-cidade: #7A733D; --px-predio: #A8643F;
@@ -238,6 +244,13 @@ a:hover { text-decoration-thickness: 2px; }
 .lugar.e-pede-cuidado { color: var(--e-pede-cuidado); }
 .lugar.e-por-fazer { color: var(--e-por-fazer); }
 .lugar.e-em-obra { color: var(--e-em-obra); }
+.lugar.e-tem-raiz { color: var(--e-tem-raiz); }
+.lugar.e-adormeceu { color: var(--e-adormeceu); }
+/* a mancha do tempo: fresca = anel vivo; adormecida = anel tracejado e vazio, sem cor.
+   O miolo do pino não muda — a mancha é a idade, o pino é o veredicto da régua. */
+.lugar .tempo { fill: none; pointer-events: none; }
+.lugar .tempo.t-floresce { stroke: var(--e-floresce); stroke-width: 2.5px; opacity: .7; }
+.lugar .tempo.t-adormeceu { stroke: var(--tinta-fraca); stroke-width: 2px; stroke-dasharray: 2 5; opacity: .55; }
 .lugar .area { fill: currentColor; fill-opacity: .1; stroke: currentColor; stroke-width: 2px; stroke-dasharray: 6 4; }
 .lugar .halo { fill: currentColor; opacity: .2; transform-box: fill-box; transform-origin: center; transition: transform .2s steps(3), opacity .2s; }
 .lugar .sombra { fill: rgb(30 25 10 / .35); }
@@ -407,6 +420,8 @@ a.cartao:hover, a.cartao.aceso { border-color: var(--acento-vivo); }
 .cor-pede-cuidado { --cor: var(--e-pede-cuidado); }
 .cor-por-fazer { --cor: var(--e-por-fazer); }
 .cor-em-obra { --cor: var(--e-em-obra); }
+.cor-tem-raiz { --cor: var(--e-tem-raiz); }
+.cor-adormeceu { --cor: var(--e-adormeceu); }
 
 .linha-estado { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 10px; font-size: 13px; color: var(--tinta-suave); }
 .estado {
@@ -420,6 +435,9 @@ a.cartao:hover, a.cartao.aceso { border-color: var(--acento-vivo); }
 .e-pede-cuidado { color: var(--e-pede-cuidado); }
 .e-por-fazer { color: var(--e-por-fazer); }
 .e-em-obra { color: var(--e-em-obra); }
+.e-tem-raiz { color: var(--e-tem-raiz); }
+.e-adormeceu { color: var(--e-adormeceu); }
+.estado.e-adormeceu::before { background: transparent; border: 1.5px dashed currentColor; }
 .estado.e-por-fazer::before { background: transparent; border: 1.5px solid currentColor; }
 .cuidado {
   font: 500 10.5px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase;
@@ -550,6 +568,7 @@ html.contraste {
   --tinta: #000000; --tinta-suave: #000000; --tinta-fraca: #222222; --linha: #000000;
   --acento: #6a3a00; --acento-vivo: #6a3a00; --rio: #003f73; --rio-texto: #003f73;
   --e-floresce: #00532a; --e-pede-cuidado: #8a2e00; --e-por-fazer: #333333; --e-em-obra: #4a1f7a;
+  --e-adormeceu: #003a52; --e-tem-raiz: #3a3200;
   --px-terra: #ffffff; --px-cidade: #f0f0f0; --px-campo: #eef5e0; --px-parque: #cfe8c0; --px-mata: #9fcf8f;
   --px-praca: #ffd28a; --px-agua: #a9dcff; --px-rua: #9a9a9a; --px-via: #555555; --px-grande: #000000;
   --px-ponte: #000000; --px-predio: #c8c8c8; --px-rio: #003f73; --px-riacho: #003f73; --jornada: #a02c00;
@@ -560,6 +579,7 @@ html.contraste {
     --tinta: #ffffff; --tinta-suave: #ffffff; --tinta-fraca: #e6e6e6; --linha: #ffffff;
     --acento: #ffd166; --acento-vivo: #ffd166; --rio: #8fd3ff; --rio-texto: #8fd3ff;
     --e-floresce: #7dffb0; --e-pede-cuidado: #ffab70; --e-por-fazer: #e6e6e6; --e-em-obra: #d9b8ff;
+    --e-adormeceu: #a8d8ff; --e-tem-raiz: #ffe8a0;
     --px-terra: #000000; --px-cidade: #111111; --px-campo: #0d1a0d; --px-parque: #123a12; --px-mata: #1f5a1f;
     --px-praca: #5a3d00; --px-agua: #003050; --px-rua: #8a8a8a; --px-via: #c8c8c8; --px-grande: #ffd166;
     --px-ponte: #ffffff; --px-predio: #333333; --px-rio: #8fd3ff; --px-riacho: #8fd3ff; --jornada: #ffab70;
@@ -688,6 +708,8 @@ a.botao:hover { background: #17633b; }
 .ver .ver-chip.e-pede-cuidado i { background: var(--e-pede-cuidado); }
 .ver .ver-chip.e-por-fazer i { background: var(--e-por-fazer); }
 .ver .ver-chip.e-em-obra i { background: var(--e-em-obra); }
+.ver .ver-chip.e-tem-raiz i { background: var(--e-tem-raiz); }
+.ver .ver-chip.e-adormeceu i { background: transparent; border: 1.5px dashed var(--e-adormeceu); }
 .ver .ver-chip[aria-pressed="false"] { opacity: .45; text-decoration: line-through; text-decoration-thickness: 1px; background: transparent; border-style: dashed; }
 .ver-chip.c-praca { --c: #d9772b; } .ver-chip.c-transporte { --c: #2b5fa6; } .ver-chip.c-festa { --c: #c8406a; }
 .ver-chip.c-fe { --c: #6a58b0; } .ver-chip.c-saude { --c: #c23b35; } .ver-chip.c-ensino { --c: #1d8fbf; }

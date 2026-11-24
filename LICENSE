@@ -2,6 +2,13 @@ MIT License
 
 Copyright (c) 2026 Maestro Cuca · Passos, Minas Gerais
 
+Escopo: este MIT cobre o código da UAI (os ficheiros de programa). Não cobre as
+fotografias do acervo (Creative Commons, uma a uma em CREDITOS.md), a base do mapa
+em mapa/regiao.json (© colaboradores do OpenStreetMap, sob ODbL — ver
+mapa/ATRIBUICAO.md), o relevo (Terrain Tiles / SRTM, cortesia do U.S. Geological
+Survey) nem as letras (SIL OFL 1.1, em estatico/fontes/OFL.txt). Cada peça viaja
+com a sua licença; o MIT não as regala.
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights

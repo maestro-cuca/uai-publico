@@ -111,7 +111,10 @@ TIPOS = {
     "contesta": "alguém diz «não é assim»",
     "pedido": "bati à porta — o pedido em si, sem a resposta ainda",
 }
-DIAS_PARA_ADORMECER = 90
+# Os estados que o mapa pode mostrar: os quatro de um registo escrito à mão mais
+# os dois que só o tempo sabe (`regua.tempo_da_ficha`). `ESTADOS` não os leva:
+# adormecer e criar raiz não se escrevem num registo — calculam-se.
+ESTADOS_NO_MAPA = (*ESTADOS, "adormeceu", "tem raiz")
 
 CAMPOS_FICHA = {"lugar", "pessoa", "autorizou", "registos", "retirada", "carimbos", "selo_retirada"}   # as duas metades: lugar e pessoa
 CAMPOS_LUGAR = {"nome", "referencia"}
@@ -151,6 +154,35 @@ def fotos_do_acervo(pasta: Path = ACERVO) -> dict[str, dict]:
     if not lista.exists():
         return {}
     return {item["ficheiro"]: item for item in json.loads(lista.read_text(encoding="utf-8"))}
+
+
+# ───────────────────────── créditos (24/11/2026) ─────────────────────────
+# A licença livre não dispensa o crédito — e o crédito, sem link, não se
+# cumpre. Cada foto leva o autor, a licença (com o link que a CC pede) e a
+# página de origem no Wikimedia Commons. O mapa leva a base (ODbL) e o relevo
+# (Terrain Tiles/SRTM, cortesia do USGS).
+
+LICENCAS_CC = {
+    "CC BY 4.0": "https://creativecommons.org/licenses/by/4.0/",
+    "CC BY-SA 4.0": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "CC BY-SA 3.0": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "CC BY-SA 2.0": "https://creativecommons.org/licenses/by-sa/2.0/",
+}
+
+
+def licenca_url(licenca: str) -> str:
+    """O link canónico da licença Creative Commons — a CC exige-o ao lado do crédito."""
+    return LICENCAS_CC.get(licenca, "")
+
+
+def origem_url(it: dict) -> str:
+    """A página do ficheiro no Wikimedia Commons — a fonte do crédito da foto."""
+    import urllib.parse
+
+    t = it.get("titulo", "")
+    if t.startswith("File:"):
+        return "https://commons.wikimedia.org/wiki/" + urllib.parse.quote(t.replace(" ", "_"), safe=":")
+    return it.get("url", "")
 
 
 def versao_anterior(id_: str, ref: str = "HEAD", pasta: str = "fichas") -> dict | None:
@@ -438,9 +470,9 @@ def lugares_no_mapa(fichas: dict, onde: dict, moldura: dict, hoje: dt.date) -> l
         s = situacao(f, hoje)
         nome = f["lugar"]["nome"]
         n = len(f["registos"])
-        rotulo = (f"{nome} — {s['estado'] or 'sem estado'}" + (" (lugar aproximado)" if o["precisao"] == "aproximado" else "")
+        rotulo = (f"{nome} — {s['estado_da_ficha'] or s['estado'] or 'sem estado'}" + (" (lugar aproximado)" if o["precisao"] == "aproximado" else "")
                   + f" · {n} {'história contada' if n == 1 else 'histórias contadas'}")
-        saida.append({"id": id_, "nome": nome, "estado": s["estado"], "x": x, "y": y,
+        saida.append({"id": id_, "nome": nome, "estado": s["estado_da_ficha"] or s["estado"], "tempo": s["tempo"], "x": x, "y": y,
                       "raio": o.get("raio_m", 0), "precisao": o["precisao"], "rotulo": rotulo, "historias": n})
     return saida
 
@@ -479,7 +511,9 @@ def situacao(ficha: dict, hoje: dt.date, fotos: dict | None = None) -> dict:
             cuidado.append("esperando_resposta")  # só tem pedidos — a porta bateu e ninguém abriu
         else:
             cuidado.append("broto")  # ainda ninguém viu nem contou: só leituras e perguntas
-    if parada >= DIAS_PARA_ADORMECER:
+    # O tempo é lido na régua — não se conta outra vez aqui (uma régua, três leitores).
+    tempo = regua.tempo_da_ficha(ficha, hoje)
+    if tempo == "adormeceu":
         cuidado.append("adormecida")
     if regs[-1]["tipo"] == "contesta":
         cuidado.append("contestada")
@@ -495,6 +529,8 @@ def situacao(ficha: dict, hoje: dt.date, fotos: dict | None = None) -> dict:
         "ultima_entrada": ultima_entrada.isoformat(),
         "parada_ha": parada,
         "cuidado": cuidado,
+        "estado_da_ficha": regua.estado_da_ficha(ficha, hoje, fotos),
+        "tempo": tempo,
     }
 
 
@@ -605,8 +641,8 @@ def ha_quanto(dias: int | None) -> str:
 ESTATICO = RAIZ / "estatico"
 JORNADAS_TRACADAS: list[dict] = []  # preenchidas em construir(): o cartão e a página de início leem-nas
 VERSAO = "0"  # trocada em construir(): um hash do que se publica, para o navegador não servir o velho
-ATRIBUICAO = ('mapa © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> · '
-              'relevo: Terrain Tiles / SRTM')
+ATRIBUICAO = ('mapa: © <a href="https://www.openstreetmap.org/copyright" rel="noopener">colaboradores do OpenStreetMap</a> · base sob ODbL · '
+              'relevo: Terrain Tiles · SRTM/GMTED2010, cortesia do U.S. Geological Survey')
 
 
 # Os jeitos de ver: três modos (que são só pontos de partida), cinco camadas e dois filtros.
@@ -640,7 +676,7 @@ def cartao_ver() -> str:
         for k, r in CAMADAS)
     estados = "".join(
         f'<button type="button" class="ver-chip e-{_classe(x)}" aria-pressed="true" data-estado="{_classe(x)}">'
-        f'<i aria-hidden="true"></i>{e(x or "sem estado")}</button>' for x in (*ESTADOS, None))
+        f'<i aria-hidden="true"></i>{e(x or "sem estado")}</button>' for x in (*ESTADOS_NO_MAPA, None))
     cats = "".join(
         f'<button type="button" class="ver-chip c-{k}" aria-pressed="true" data-cat="{k}">'
         f'<svg viewBox="-10 -10 20 20" width="16" height="16" aria-hidden="true"><circle r="9" fill="var(--c)"/>'
@@ -728,7 +764,7 @@ def pagina(titulo: str, corpo: str, descricao: str = "", foco: str = "", scripts
 {corpo}
 <footer class="rodape"><p>UAI · Unidade de Acompanhamento e Informação · Passos, MG</p>
 <p>fonte · data · estado — ao lado de cada coisa.</p>
-<p><a href="index.html">início</a> · <a href="acervo.html">acervo</a> · <a href="deixar.html">contar uma história</a></p></footer>
+<p><a href="index.html">início</a> · <a href="acervo.html">acervo</a> · <a href="deixar.html">contar uma história</a> · <a href="creditos.html">créditos</a></p></footer>
 </main>
 </body>
 </html>
@@ -889,14 +925,50 @@ def pagina_acervo(fotos: dict) -> str:
     for nome, it in fotos.items():
         titulo = re.sub(r"^File:", "", it.get("titulo", nome))
         titulo = re.sub(r"\.(jpe?g|png)$", "", titulo, flags=re.I)
-        figs.append(f"""<figure><a href="{e(it.get("url", ""))}" rel="noopener"><img src="acervo/{e(nome)}" alt="{e(titulo)}" loading="lazy"></a>
-<figcaption><b>{e(titulo)}</b>{e(it.get("autor", "autor desconhecido"))} · {e(it.get("licenca", "licença a verificar"))} · {e((it.get("data") or "")[:10])}</figcaption></figure>""")
+        lic = it.get("licenca", "licença a verificar")
+        link_lic = licenca_url(lic)
+        lic_txt = f'<a href="{e(link_lic)}" rel="noopener">{e(lic)}</a>' if link_lic else e(lic)
+        origem = origem_url(it)
+        figs.append(f"""<figure><a href="{e(it.get("url", origem))}" rel="noopener"><img src="acervo/{e(nome)}" alt="{e(titulo)}" loading="lazy"></a>
+<figcaption><b>{e(titulo)}</b> · {e(it.get("autor", "autor desconhecido"))} · {lic_txt} · {e((it.get("data") or "")[:10])} · <a href="{e(origem)}" rel="noopener">fonte</a></figcaption></figure>""")
     corpo = f"""<p class="selo"><a href="index.html">UAI · Passos</a></p>
 <h1>As fotos <b>guardadas</b></h1>
-<p class="sub">{len(fotos)} fotografias de licença livre. Cada uma leva o autor e a licença — licença livre não dispensa o crédito.
+<p class="sub">{len(fotos)} fotografias de licença livre. Cada uma leva o autor, a licença (com link) e a fonte — licença livre não dispensa o crédito.
 As fotos antigas de família e do Centro de Memória não se copiam: pedem-se.</p>
 <div class="acervo">{"".join(figs)}</div>"""
     return pagina("As fotos guardadas — UAI", corpo, "Fotografias de Passos com autor, licença e origem.")
+
+
+def pagina_creditos(fotos: dict) -> str:
+    """A página de créditos — a UAI diz o que deve a quem (24/11/2026).
+
+    O MIT cobre só o código. As fotos têm as suas licenças (CC), o mapa a sua
+    (ODbL na base, Terrain Tiles no relevo) e as letras a delas (SIL OFL 1.1).
+    Cada um com o seu autor e o seu link — a beleza da atribuição não substitui
+    a atribuição.
+    """
+    itens = []
+    for nome, it in fotos.items():
+        titulo = re.sub(r"^File:", "", it.get("titulo", nome))
+        lic = it.get("licenca", "licença a verificar")
+        link_lic = licenca_url(lic)
+        lic_txt = f'<a href="{e(link_lic)}" rel="noopener">{e(lic)}</a>' if link_lic else e(lic)
+        origem = origem_url(it)
+        itens.append(f"""<li><b>{e(titulo)}</b> — {e(it.get("autor", "autor desconhecido"))} · {lic_txt} · <a href="{e(origem)}" rel="noopener">fonte</a></li>""")
+    corpo = f"""<p class="selo"><a href="index.html">UAI · Passos</a></p>
+<h1>Créditos</h1>
+<p class="sub">O que a UAI deve a quem — e a quem, exactamente. O código é MIT; o resto tem dono, e o dono tem nome.</p>
+<h2>As fotografias</h2>
+<p class="ref">As {len(fotos)} fotos do acervo são de licença livre (Wikimedia Commons). Cada uma leva o autor, a licença com link e a página de origem — a Creative Commons pede o crédito e o link, e a UAI não os dispensa.</p>
+<ul class="creditos">{"".join(itens)}</ul>
+<h2>O mapa</h2>
+<p class="ref">A base geográfica é do OpenStreetMap: © <a href="https://www.openstreetmap.org/copyright" rel="noopener">colaboradores do OpenStreetMap</a>, distribuída sob a licença <a href="https://opendatacommons.org/licenses/odbl/" rel="noopener">ODbL</a> (o ficheiro <code>mapa/regiao.json</code> é uma base derivada, e viaja sob ODbL).</p>
+<p class="ref">O relevo vem dos <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" rel="noopener">Terrain Tiles</a> (Mapzen / AWS Open Data) — inclui dados de terreno GMTED2010 e SRTM, cortesia do <a href="https://www.usgs.gov/" rel="noopener">U.S. Geological Survey</a>.</p>
+<h2>As letras</h2>
+<p class="ref">Fraunces, Archivo e JetBrains Mono — <a href="https://openfontlicense.org/" rel="noopener">SIL Open Font License 1.1</a>. O texto da licença viaja junto das letras (no ficheiro <code>OFL.txt</code>).</p>
+<h2>O código</h2>
+<p class="ref">O motor da UAI é <a href="LICENSE">MIT</a> — «Copyright (c) 2026 Maestro Cuca · Passos, Minas Gerais». A ética, essa, não é MIT: está em <code>LEI-DA-CASA.md</code>.</p>"""
+    return pagina("Créditos — UAI", corpo, "O que a UAI deve a quem: fotos (CC), mapa (ODbL), relevo (Terrain Tiles/USGS), letras (OFL) e código (MIT).")
 
 
 def _registo_li(r: dict, i: int, fotos: dict | None = None) -> str:
@@ -1178,6 +1250,7 @@ def construir(saida: Path, hoje: dt.date | None = None) -> list[str]:
             pagina_pessoa(id_, f, hoje, avisos_gente.get(id_, [])), encoding="utf-8")
     (saida / "acervo.html").write_text(pagina_acervo(fotos), encoding="utf-8")
     (saida / "deixar.html").write_text(pagina_deixar(fichas), encoding="utf-8")
+    (saida / "creditos.html").write_text(pagina_creditos(fotos), encoding="utf-8")
     mesa = pagina_curador(fichas, onde, avisos_por, hoje, regiao["moldura"], regiao, gente=gente).replace(
         "<head>", '<head>\n<meta name="robots" content="noindex">')
     (saida / "curador.html").write_text(mesa, encoding="utf-8")
@@ -1333,7 +1406,8 @@ def conta_do_acervo(fichas: dict, hoje: dt.date) -> dict:
     """Os números que o guardião deve ver — todos saem do que o motor já calcula."""
     sit = {id_: situacao(f, hoje) for id_, f in fichas.items()}
     return {
-        "adormecidas": sorted([(i, s["parada_ha"]) for i, s in sit.items() if "adormecida" in s["cuidado"]],
+        "adormecidas": sorted([(i, s["parada_ha"]) for i, s in sit.items()
+                              if s.get("estado_da_ficha") == "adormeceu"],
                               key=lambda x: -x[1]),
         "brotos": [i for i, s in sit.items() if "broto" in s["cuidado"]],
         "contestadas": [i for i, s in sit.items() if "contestada" in s["cuidado"]],

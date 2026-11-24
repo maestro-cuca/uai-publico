@@ -574,8 +574,31 @@ def gente(n: int) -> str:
     return f'<g class="gente" aria-hidden="true">{"".join(figuras)}</g>'
 
 
+MANCHA_DO_TEMPO = 23  # raio, em unidades do pino: a mancha fica debaixo do halo, não o tapa
+
+
+def _mancha_do_tempo(tempo: str | None) -> str:
+    """A mancha do tempo em volta do pino — o pino não se toca.
+
+    O pino diz o veredicto da régua (que pode ser «pede cuidado»); a mancha diz
+    só a idade: **fresca** (floresce — anel vivo) ou **apagada** (adormeceu —
+    anel tracejado, sem cor). Entre as duas («tem raiz») não se desenha nada: nem
+    fresca nem esquecida, a ficha fala por si.
+
+    O tempo já vem decidido da régua (`regua.tempo_da_ficha`); aqui não há
+    limiar nenhum — o mapa não faz uma segunda régua.
+    """
+    if tempo in ("floresce", "adormeceu"):
+        return f'<circle class="tempo t-{tempo}" r="{MANCHA_DO_TEMPO}"/>'
+    return ""
+
+
 def svg(regiao: dict, lugares: list[dict], jornadas: list[dict] | tuple = (), chao_: dict | None = None) -> str:
-    """`lugares`: [{id, nome, estado, x, y, raio, precisao, rotulo, historias}] já projetados."""
+    """`lugares`: [{id, nome, estado, tempo, x, y, raio, precisao, rotulo, historias}] já projetados.
+
+    `estado` é o veredicto da régua e pinta o pino; `tempo` é só a idade (já decidida pela
+    régua) e desenha a mancha em volta — o pino nunca é recalculado aqui.
+    """
     m, c = regiao["moldura"], regiao["camadas"]
     W, H = m["largura"], m["altura"]
     rotulos = []
@@ -638,15 +661,16 @@ def svg(regiao: dict, lugares: list[dict], jornadas: list[dict] | tuple = (), ch
     pinos = []
     for lg in lugares:
         estado = (lg.get("estado") or "nenhum").replace(" ", "-")
+        tempo = lg.get("tempo") or ""
         area = '<ellipse class="area"/>' if lg["precisao"] == "aproximado" else ""
         marca = '<text class="marca" y="4" text-anchor="middle">?</text>' if lg["precisao"] == "aproximado" else '<rect class="brilho" x="-4" y="-4" width="3" height="3"/>'
         largura = len(lg["nome"]) * 7.4 + 20
         pinos.append(
             f'<a class="lugar e-{e(estado)}" href="{e(lg["id"])}.html" data-id="{e(lg["id"])}" data-nome="{e(lg["nome"])}" data-estado="{e(estado)}" '
-            f'data-raio="{lg.get("raio") or 0:.0f}" aria-label="{e(lg["rotulo"])}">'
+            f'data-tempo="{e(tempo)}" data-raio="{lg.get("raio") or 0:.0f}" aria-label="{e(lg["rotulo"])}">'
             f'<title>{e(lg["rotulo"])}</title>{area}'
             f'<g class="pino" data-x="{lg["x"]:.0f}" data-y="{lg["y"]:.0f}">'
-            f'<rect class="halo" x="-15" y="-15" width="30" height="30"/>'
+            f'<rect class="halo" x="-15" y="-15" width="30" height="30"/>{_mancha_do_tempo(tempo)}'
             f'<rect class="sombra" x="-6" y="-6" width="16" height="16"/><rect class="miolo" x="-8" y="-8" width="16" height="16"/>{marca}'
             f'<g class="etiqueta" data-largura="{largura:.0f}"><rect class="sombra" x="2" y="-10" width="{largura:.0f}" height="22"/>'
             f'<rect class="placa" x="0" y="-12" width="{largura:.0f}" height="22"/><text class="nome" x="10" y="4">{e(lg["nome"])}</text></g>'

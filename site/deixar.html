@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conta o que cê sabe — UAI</title>
+<meta name="description" content="Conte o que cê sabe de um lugar de Passos: falando, escrevendo ou mandando um áudio.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%232b7a47' opacity='.25'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%232b7a47'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#0F2A22" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F2A22" media="(prefers-color-scheme: dark)">
+<link rel="preload" href="fontes/Fraunces-normal-300-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fontes/fontes.css?v=32fa8590ec">
+<link rel="stylesheet" href="uai.css?v=32fa8590ec">
+<script>try{for(const k of["letra-grande","contraste","so-texto"])if(localStorage.getItem("uai:"+k)==="1")document.documentElement.classList.add(k);const f=localStorage.getItem("uai:fundo");if(f==="azul"||f==="terra")document.documentElement.dataset.fundo=f}catch(e){}</script>
+<script src="acesso.js?v=32fa8590ec" defer></script>
+<script src="mapa.js?v=32fa8590ec" data-versao="32fa8590ec" defer></script>
+<script src="contato.js?v=32fa8590ec" defer></script><script src="conversa.js?v=32fa8590ec" defer></script>
+</head>
+<body>
+<a class="pular" href="#conteudo">pular o mapa e ir para o texto</a>
+<div id="cena" role="region" aria-label="Mapa — arraste para andar, roda ou beliscão para aproximar">
+<div class="norte" aria-hidden="true">N</div>
+<div class="controles" hidden>
+<button type="button" data-acao="mais" aria-label="aproximar">+</button>
+<button type="button" data-acao="menos" aria-label="afastar">−</button>
+<button type="button" data-acao="tudo" title="ver a região toda" aria-label="ver a região toda">◎</button>
+<button type="button" data-acao="aqui" class="so-explorador" title="estou aqui — a posição fica só no seu aparelho" aria-label="estou aqui"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3 19 20l-7-4-7 4z"/></svg></button>
+<button type="button" data-acao="ver" title="jeitos de ver: modos, camadas e filtros" aria-label="jeitos de ver: modos, camadas e filtros" aria-expanded="false" aria-controls="ver"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/></svg></button>
+</div>
+<section class="ver" id="ver" hidden aria-labelledby="ver-t">
+<div class="ver-topo"><h2 id="ver-t">Jeitos de ver</h2><button type="button" class="ver-fechar" data-ver="fechar" aria-label="fechar">×</button></div>
+<div class="ver-modos" role="radiogroup" aria-label="modo"><button type="button" role="radio" aria-checked="false" data-modo="sossego" data-dica="Só o chão e os lugares da UAI. Leve e quieto, bom para ler.">sossego</button><button type="button" role="radio" aria-checked="false" data-modo="passeio" data-dica="O mapa como ele é: os convites aparecem quando se aproxima.">passeio</button><button type="button" role="radio" aria-checked="false" data-modo="explorador" data-dica="Para sair de casa: tudo à vista, o que fica perto e quanto se anda a pé.">explorador</button></div>
+<p class="ver-dica" aria-live="polite"></p>
+<div class="ver-vista" role="radiogroup" aria-label="vista"><span>vista</span>
+<button type="button" role="radio" aria-checked="true" data-vista="cima">de cima</button>
+<button type="button" role="radio" aria-checked="false" data-vista="inclinada">inclinada</button></div>
+<div class="ver-jornadas"><h3>Jornadas</h3><ol class="ver-lista"><li><button type="button" data-jornada="quem-chega-de-onibus" aria-pressed="false"><b>Quem chega de ônibus</b><span>6 paradas · 2,0 km · uns 26 min a pé</span></button></li><li><button type="button" data-jornada="as-pracas-do-centro" aria-pressed="false"><b>As praças do centro</b><span>4 paradas · 1,1 km · uns 15 min a pé</span></button></li></ol><p class="ver-convite" data-convite="quem-chega-de-onibus" hidden>Da rodoviária até o coreto, pelas praças do caminho. Para quem acabou de chegar — ou para quem nunca reparou.</p><p class="ver-convite" data-convite="as-pracas-do-centro" hidden>Uma volta curta, de praça em praça. Sente num banco em cada uma.</p><ol class="ver-paradas" hidden></ol></div>
+<div class="ver-perto" hidden>
+<div class="ver-perto-topo"><h3>Perto daqui</h3><button type="button" class="ver-link" data-ver="aqui">estou aqui</button></div>
+<p class="ver-nota ver-onde"></p>
+<ol class="ver-lista"></ol>
+</div>
+<details class="ver-mais">
+<summary>camadas e filtros</summary>
+<h3>Camadas</h3>
+<div class="ver-camadas"><label class="ver-camada"><input type="checkbox" data-camada="relevo" checked> relevo e curvas de nível</label><label class="ver-camada"><input type="checkbox" data-camada="nomes" checked> nomes de bairros, rios e pontes</label><label class="ver-camada"><input type="checkbox" data-camada="convites" checked> convites — praças, igrejas, escolas…</label><label class="ver-camada"><input type="checkbox" data-camada="gente" checked> gente — uma pessoinha por história</label><label class="ver-camada"><input type="checkbox" data-camada="jornadas" checked> jornadas — caminhadas pelas ruas</label></div>
+<h3>Lugares da UAI, pelo estado</h3>
+<div class="ver-chips" data-filtro="estado"><button type="button" class="ver-chip e-floresce" aria-pressed="true" data-estado="floresce"><i aria-hidden="true"></i>floresce</button><button type="button" class="ver-chip e-pede-cuidado" aria-pressed="true" data-estado="pede-cuidado"><i aria-hidden="true"></i>pede cuidado</button><button type="button" class="ver-chip e-por-fazer" aria-pressed="true" data-estado="por-fazer"><i aria-hidden="true"></i>por fazer</button><button type="button" class="ver-chip e-em-obra" aria-pressed="true" data-estado="em-obra"><i aria-hidden="true"></i>em obra</button><button type="button" class="ver-chip e-adormeceu" aria-pressed="true" data-estado="adormeceu"><i aria-hidden="true"></i>adormeceu</button><button type="button" class="ver-chip e-tem-raiz" aria-pressed="true" data-estado="tem-raiz"><i aria-hidden="true"></i>tem raiz</button><button type="button" class="ver-chip e-nenhum" aria-pressed="true" data-estado="nenhum"><i aria-hidden="true"></i>sem estado</button></div>
+<h3>Convites, pelo tipo</h3>
+<div class="ver-chips" data-filtro="cat"><button type="button" class="ver-chip c-praca" aria-pressed="true" data-cat="praca"><svg viewBox="-10 -10 20 20" width="16" height="16" aria-hidden="true"><circle r="9" fill="var(--c)"/><g fill="#fff"><circle cy="-1.6" r="3.2"/><rect x="-.8" y="0" width="1.6" height="4.6" rx=".5"/></g></svg>praça</button><button type="button" class="ver-chip c-transporte" aria-pressed="true" data-cat="transporte"><svg viewBox="-10 -10 20 20" width="16" height="16" aria-hidden="true"><circle r="9" fill="var(--c)"/><g fill="#fff"><rect x="-4" y="-4" width="8" height="7" rx="1.6"/><rect x="-3" y="3" width="1.6" height="1.6" rx=".5"/><rect x="1.4" y="3" width="1.6" height="1.6" rx=".5"/></g></svg>rodoviária e ônibus</button><button type="button" class="ver-chip c-festa" aria-pressed="true" data-cat="festa"><svg viewBox="-10 -10 20 20" width="16" height="16" aria-hidden="true"><circle r="9" fill="var(--c)"/><g fill="#fff"><rect x="-3.4" y="-4.6" width="1.2" height="9.2" rx=".5"/><path d="M-2.2-4.6h6l-1.6 2.4 1.6 2.4h-6z"/></g></svg>exposição e festa</button><button type="button" class="ver-chip c-fe" aria-pressed="true" data-cat="fe"><svg viewBox="-10 -10 20 20" width="16" height="16" aria-hidden="true"><circle r="9" fill="var(--c)"/><g fill="#fff"><rect x="-.9" y="-4.8" width="1.8" height="9.6" rx=".5"/><rect x="-3.4" y="-2.4" width="6.8" height="1.8" rx=".5"/></g></svg>igreja</button><button type="button" class="ver-chip c-saude" aria-pressed="true" data-cat="saude"><svg viewBox="-10 -10 20 20" width="16" height="16" aria-hidden="true"><circle r="9" fill="var(--c)"/><g fill="#fff"><rect x="-1.3" y="-4" width="2.6" height="8" rx=".6"/><rect x="-4" y="-1.3" width="8" height="2.6" rx=".6"/></g></svg>saúde</button><button type="button" class="ver-chip c-ensino" aria-pressed="true" data-cat="ensino"><svg viewBox="-10 -10 20 20" width="16" height="16" aria-hidden="true"><circle r="9" fill="var(--c)"/><g fill="#fff"><path d="M0-4.2 5-1.6 0 1-5-1.6z"/><path d="M-3 0v2.4c1.6 1.4 4.4 1.4 6 0V0L0 1.6z"/></g></svg>escola e faculdade</button><button type="button" class="ver-chip c-esporte" aria-pressed="true" data-cat="esporte"><svg viewBox="-10 -10 20 20" width="16" height="16" aria-hidden="true"><circle r="9" fill="var(--c)"/><g fill="#fff"><circle r="4.2" fill="none" stroke="#fff" stroke-width="1.4"/><path d="M-4 0h8M0-4c-2 2.6-2 5.4 0 8" fill="none" stroke="#fff" stroke-width="1.1"/></g></svg>esporte</button><button type="button" class="ver-chip c-cultura" aria-pressed="true" data-cat="cultura"><svg viewBox="-10 -10 20 20" width="16" height="16" aria-hidden="true"><circle r="9" fill="var(--c)"/><g fill="#fff"><path d="M0-4.6 1.4-1.5 4.6-1.2 2.2 1 2.9 4.3 0 2.6-2.9 4.3-2.2 1-4.6-1.2-1.4-1.5z"/></g></svg>cultura</button><button type="button" class="ver-chip c-mercado" aria-pressed="true" data-cat="mercado"><svg viewBox="-10 -10 20 20" width="16" height="16" aria-hidden="true"><circle r="9" fill="var(--c)"/><g fill="#fff"><path d="M-4.4-1.2h8.8l-1 5.4h-6.8z"/><path d="M-2.2-1.2 0-4.4 2.2-1.2" fill="none" stroke="#fff" stroke-width="1.2"/></g></svg>mercado</button><button type="button" class="ver-chip c-publico" aria-pressed="true" data-cat="publico"><svg viewBox="-10 -10 20 20" width="16" height="16" aria-hidden="true"><circle r="9" fill="var(--c)"/><g fill="#fff"><path d="M0-4.8 4.6-2.2h-9.2z"/><rect x="-3.6" y="-1.4" width="1.4" height="4.4"/><rect x="-.7" y="-1.4" width="1.4" height="4.4"/><rect x="2.2" y="-1.4" width="1.4" height="4.4"/><rect x="-4.4" y="3.2" width="8.8" height="1.4"/></g></svg>serviço público</button></div>
+</details>
+<p class="ver-nota">O mapa aponta; o lugar é que conta. As escolhas ficam só neste aparelho. <button type="button" class="ver-link" data-ver="repor">repor</button></p>
+</section>
+<div class="jornada-barra" role="group" aria-label="jornada, parada a parada" hidden>
+<button type="button" data-j="fechar" aria-label="fechar a jornada">×</button>
+<p aria-live="polite"><b></b><span></span></p>
+<button type="button" data-j="antes" aria-label="parada anterior">‹</button>
+<button type="button" data-j="depois" aria-label="próxima parada">›</button>
+</div>
+<div class="la-fora" role="status" hidden><p>Já faz um tempinho de mapa. O melhor de Passos está lá fora — escolha um lugar daqui e vá ver de perto.</p><button type="button">combinado</button></div>
+<div class="rodape-mapa"><span id="escala" aria-hidden="true"><i></i><b></b></span><span class="atrib">mapa: © <a href="https://www.openstreetmap.org/copyright" rel="noopener">colaboradores do OpenStreetMap</a> · base sob ODbL · relevo: Terrain Tiles · SRTM/GMTED2010, cortesia do U.S. Geological Survey</span></div>
+</div>
+<main class="painel" id="conteudo" tabindex="-1">
+<button type="button" class="pega" id="pega" aria-label="estender a folha" aria-expanded="false" aria-controls="conteudo"></button>
+<p class="selo"><a href="index.html">UAI · Passos</a></p>
+<h1>Conta <b>o que cê sabe</b></h1>
+<p class="sub">Uma lembrança, uma falta, uma correção — de uma praça, uma rua, uma ponte. Sem nome, sem conta, sem senha.
+Nada sai daqui sem cê apertar «mandar».</p>
+<section class="por-voz" aria-label="Contar por voz ou por telefone">
+<h2>Num quer escrever? Pode <b>falar</b>, sô.</h2>
+<p><button type="button" class="botao ouvir-tudo" id="ouvir-tudo">ouvir o que fazer</button></p>
+<p class="grande">Mande um <b>áudio</b> para o WhatsApp da UAI:<br>
+<a class="telefone" href="https://wa.me/5535991002375">(35) 99100-2375</a></p>
+<p class="ref">Quem recebe ouve a sua voz, passa pro papel, e a história entra com a data — e sem o
+nome de quem contou. Se precisar, peça a alguém pra ler esta página em voz alta:
+o botão «ouvir o que fazer» faz isso, e o cartão de bolso (com o código de barras quadrado)
+é pra levar impresso no bolso.</p>
+</section>
+<section class="conversa" id="conversa" hidden aria-label="Conversa com a UAI">
+<div class="log" aria-live="polite"></div>
+<div class="opcoes"></div>
+<form class="responder" autocomplete="off">
+<label class="sr" for="resposta">A sua resposta</label>
+<textarea id="resposta" rows="2"></textarea>
+<div class="botoes-resposta">
+<button type="button" class="mic" hidden aria-pressed="false" title="falar em vez de escrever (o seu navegador transcreve a voz)"><span aria-hidden="true">🎙</span> falar</button>
+<button type="submit">responder</button>
+</div>
+</form>
+<div class="fim" hidden>
+<p class="ref nota-destino" id="destino"></p>
+<a class="zap botao" href="#" target="_blank" rel="noopener">mandar pelo WhatsApp</a>
+<a class="email botao secundario" href="#" hidden>mandar por e-mail</a>
+<button type="button" class="copiar secundario">copiar</button>
+<button type="button" class="de-novo secundario">contar outra</button>
+<details><summary>ver a ficha técnica</summary><pre class="tecnica"></pre></details>
+</div>
+<p class="ref nota-voz">O microfone usa o reconhecimento de voz do seu navegador — no Chrome, o áudio passa pelo serviço do Google.
+Se preferir, escreva.</p>
+</section>
+<script type="application/json" id="conversa-dados">{"lugares": [{"id": "coreto-da-praca-da-matriz", "nome": "Coreto da Praça da Matriz"}, {"id": "praca-alto-dos-passaros", "nome": "Praça do Alto dos Pássaros"}]}</script>
+<details class="formulario" id="formulario" open><summary>prefiro escrever no formulário</summary>
+<form id="f" autocomplete="off">
+<label>Lugar
+<select name="lugar"><option value="">um lugar novo…</option><option value="coreto-da-praca-da-matriz">Coreto da Praça da Matriz</option><option value="praca-alto-dos-passaros">Praça do Alto dos Pássaros</option></select></label>
+<label id="novo">Nome do lugar novo (como o povo o conhece)
+<input name="nome" placeholder="ex.: Ponte Tristão da Cunha"></label>
+<label>O que é
+<select name="tipo"><option value="verificado">verificado — visto com os olhos, em foto ou documento</option><option value="contado">contado — dito por quem viveu ou ouviu de quem viveu</option><option value="leitura">leitura — o que parece — interpretação, não facto</option><option value="falta saber">falta saber — pergunta aberta</option><option value="pedido">pedido — bati à porta — o pedido em si, sem a resposta ainda</option></select></label>
+<label>O que aconteceu, o que falta, o que se vê
+<textarea name="texto" required></textarea></label>
+<label>Quando (uma data, um ano — ou a época, em palavras)
+<input name="quando" placeholder="ex.: 1987, ou «quando eu era pequeno»"></label>
+<label>De onde vem — a fonte (obrigatória)
+<input name="fonte" required placeholder="ex.: vi no local hoje; minha avó contava; jornal de 1962, pág. 3"></label>
+<label>Como está, se souber
+<select name="estado"><option value="">não sei dizer</option><option value="floresce">floresce</option><option value="pede cuidado">pede cuidado</option><option value="por fazer">por fazer</option><option value="em obra">em obra</option></select></label>
+<button type="submit">montar a ficha</button>
+</form>
+<div id="saida" hidden>
+<h2>A sua ficha</h2>
+<p class="sub">Confira: não há nome de ninguém? Então copie e mande a quem guarda a UAI.</p>
+<pre id="json"></pre>
+<button type="button" class="secundario" id="copiar">copiar</button>
+</div>
+</details>
+<script>
+const f = document.getElementById("f"), novo = document.getElementById("novo");
+const q = new URLSearchParams(location.search);
+if (q.get("lugar")) f.lugar.value = q.get("lugar");
+else if (q.get("nome")) f.nome.value = q.get("nome").slice(0, 120);
+const mostrar = () => (novo.hidden = !!f.lugar.value);
+f.lugar.addEventListener("change", mostrar); mostrar();
+f.addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const hoje = new Date().toISOString().slice(0, 10);
+  const quando = f.quando.value.trim();
+  const reg = { tipo: f.tipo.value, texto: f.texto.value.trim() };
+  if (/^\d{4}(-\d{2}(-\d{2})?)?$/.test(quando)) reg.data = quando; else reg.epoca = quando || "sem data dita";
+  reg.entrou = hoje;
+  if (f.estado.value) reg.estado = f.estado.value;
+  reg.fonte = { descricao: f.fonte.value.trim() };
+  const ficha = f.lugar.value ? { acrescentar_a: f.lugar.value, registo: reg } : { lugar: { nome: f.nome.value.trim() }, registos: [reg] };
+  document.getElementById("json").textContent = JSON.stringify(ficha, null, 2);
+  document.getElementById("saida").hidden = false;
+});
+document.getElementById("copiar").addEventListener("click", async (ev) => {
+  try { await navigator.clipboard.writeText(document.getElementById("json").textContent); ev.target.textContent = "copiado"; }
+  catch { ev.target.textContent = "selecione o texto e copie"; }
+});
+</script>
+<footer class="rodape"><p>UAI · Unidade de Acompanhamento e Informação · Passos, MG</p>
+<p>fonte · data · estado — ao lado de cada coisa.</p>
+<p><a href="index.html">início</a> · <a href="acervo.html">acervo</a> · <a href="deixar.html">contar uma história</a> · <a href="creditos.html">créditos</a></p></footer>
+</main>
+</body>
+</html>

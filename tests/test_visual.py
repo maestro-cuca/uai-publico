@@ -73,6 +73,27 @@ class AListaChegaCedo(unittest.TestCase):
         self.assertLessEqual(int(m.group(1)), 25, "no telemóvel, mais de 25vh de mapa é tira")
 
 
+class OMapaTemCorParaOTempo(unittest.TestCase):
+    """O bug de 24/11: o pino de ontem e o de dois anos atrás tinham a mesma cor.
+
+    A régua passou a devolver quatro palavras (duas delas do tempo) — cada uma
+    tem de ter cor própria no mapa, senão o tempo decide-se e não se vê.
+    """
+
+    def test_todo_estado_do_mapa_tem_cor_propria(self):
+        for estado in uai.ESTADOS_NO_MAPA:
+            cls = estado.replace(" ", "-")
+            self.assertIn(f"--e-{cls}:", CSS, f"«{estado}» sem cor (--e-{cls})")
+            self.assertIn(f".lugar.e-{cls}", CSS, f"«{estado}» sem regra no pino")
+            self.assertIn(f".cor-{cls}", CSS, f"«{estado}» sem cor no cartão")
+
+    def test_a_mancha_do_tempo_distingue_fresca_de_adormecida(self):
+        self.assertIn(".lugar .tempo.t-floresce", CSS)
+        self.assertIn(".lugar .tempo.t-adormeceu", CSS)
+        self.assertIn("stroke-dasharray", CSS.split(".lugar .tempo.t-adormeceu")[1].split("}")[0],
+                      "a adormecida tem de ser um anel tracejado — «apagada», não uma cor forte")
+
+
 class APortaDeQuemNaoVe(unittest.TestCase):
     """Vistoria de 24/11/2026 — medida no navegador, não no olho.
 

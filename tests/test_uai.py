@@ -288,6 +288,46 @@ class OMapa(unittest.TestCase):
         self.assertIn('data-estado="nenhum"', cartao)
         for k in mapa.CATEGORIAS:
             self.assertIn(f'data-cat="{k}"', cartao)
+        # o tempo também se filtra — senão adormecer e florescer ficam iguais no mapa
+        for s in ("floresce", "adormeceu", "tem-raiz"):
+            self.assertIn(f'data-estado="{s}"', cartao)
+
+    def _mapa_com_tempo(self):
+        """Três fichas no mapa: uma de ontem, uma de há dois anos, uma firme."""
+        def com(entrou, nome):
+            return ficha(lugar={"nome": nome, "referencia": ""},
+                         registos=[{"data": entrou, "entrou": entrou, "tipo": "contado",
+                                    "texto": "contado em voz", "fonte": {"descricao": "disse"}}])
+        hoje = dt.date(2026, 11, 24)
+        fichas = {"ponte": com("2026-11-20", "Ponte"),      # 4 dias → floresce
+                  "poco": com("2024-11-24", "Poço"),        # 2 anos → adormeceu
+                  "coreto": com("2026-09-22", "Coreto")}    # ~63 dias → tem raiz
+        onde = {i: {"lat": -20.70, "lon": -46.60, "precisao": "exato"} for i in fichas}
+        return fichas, uai.lugares_no_mapa(fichas, onde, MOLDURA, hoje), hoje
+
+    def test_adormecidas_do_mapa_sao_as_do_guardiao(self):
+        """O teste-fecho: o mapa e a mesa do guardião contam as mesmas adormecidas."""
+        fichas, lugares, hoje = self._mapa_com_tempo()
+        no_mapa = {lg["id"] for lg in lugares if lg["estado"] == "adormeceu"}
+        conta = uai.conta_do_acervo(fichas, hoje)
+        self.assertEqual(no_mapa, {i for i, _ in conta["adormecidas"]})
+        self.assertEqual(no_mapa, {"poco"})
+
+    def test_o_mapa_leva_a_idade_decidida_pela_regua(self):
+        """O mapa não faz uma segunda régua: só transporta o que a régua disse."""
+        _, lugares, _ = self._mapa_com_tempo()
+        tempos = {lg["id"]: lg["tempo"] for lg in lugares}
+        self.assertEqual(tempos, {"ponte": "floresce", "poco": "adormeceu", "coreto": "tem raiz"})
+
+    def test_ontem_e_dois_anos_atras_nao_sao_o_mesmo_pino(self):
+        _, lugares, _ = self._mapa_com_tempo()
+        out = mapa.svg(_regiao(), lugares)
+        self.assertIn('data-tempo="floresce"', out)
+        self.assertIn('data-tempo="adormeceu"', out)
+        self.assertIn('<circle class="tempo t-floresce"', out)
+        self.assertIn('<circle class="tempo t-adormeceu"', out)
+        # «tem raiz» não desenha mancha: nem fresca nem esquecida
+        self.assertEqual(out.count('<circle class="tempo'), 2)
 
 
 
@@ -490,6 +530,11 @@ class OsNumerosDoGuardiao(unittest.TestCase):
     def test_uma_ficha_parada_ha_90_dias_entra_no_silencio(self):
         f = ficha()
         f["registos"][0]["entrou"] = "2026-01-01"
+        # A ficha de teste usa foto «ponte.jpg», e o acervo real não a tem —
+        # a régua do estado devolve «pede cuidado» (prova por juntar), que tem precedência.
+        # Para o teste do silêncio, usamos um registo que não pede prova: contado.
+        f["registos"][0] = {"tipo": "contado", "data": "2026-01-01", "entrou": "2026-01-01",
+                            "texto": "dizem que era assim", "fonte": {"descricao": "de ouvir dizer"}}
         c = uai.conta_do_acervo({"ponte": f}, uai.dt.date(2026, 11, 23))
         self.assertIn("ponte", [i for i, _ in c["adormecidas"]])
 

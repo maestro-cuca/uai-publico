@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conte uma história de Passos — cartão</title>
+<style>
+  @page { margin: 12mm; }
+  body { background:#fff; color:#000; font-family: system-ui, Arial, sans-serif;
+    font-size: 20px; line-height: 1.45; margin: 0; padding: 22px 20px 30px; max-width: 700px; }
+  h1 { font-size: 40px; line-height: 1.1; margin: 0 0 6px; }
+  h1 small { display:block; font-size: 22px; font-weight: 400; margin-top: 6px; }
+  .passos { font-size: 22px; margin: 18px 0 10px; padding-left: 0; list-style: none; }
+  .passos li { margin-bottom: 12px; padding-left: 46px; position: relative; }
+  .passos li b { display:inline-block; position:absolute; left:0; top:0; width:34px; height:34px;
+    border:3px solid #000; border-radius:50%; text-align:center; line-height:30px; font-size:20px; }
+  .numero { font-size: 46px; font-weight: 700; letter-spacing: 1px; margin: 6px 0 2px; }
+  .qr { display: flex; gap: 18px; align-items: center; margin: 18px 0 6px; }
+  .qr img { width: 190px; height: 190px; image-rendering: pixelated; border: 2px solid #000; }
+  .qr p { font-size: 19px; margin: 0; }
+  .rodape { border-top: 3px solid #000; margin-top: 20px; padding-top: 12px; font-size: 18px; }
+  .rodape b { font-weight: 700; }
+  @media print { body { padding: 0; } .qr img { width: 170px; height: 170px; } }
+</style>
+</head>
+<body>
+<h1>Conte uma história de Passos
+<small>Uma praça, uma rua, uma ponte, um coreto — o que cê lembra.</small></h1>
+
+<ol class="passos">
+<li><b>1</b> <b>Pode falar, sô.</b> Num precisa escrever nada.</li>
+<li><b>2</b> Mande um <b>áudio</b> no WhatsApp da UAI:</li>
+</ol>
+<p class="numero"><a href="https://wa.me/5535991002375?text=Quero%20contar%20uma%20hist%C3%B3ria%20para%20a%20UAI%20de%20Passos." style="color:#000">(35) 99100-2375</a></p>
+<p style="font-size:19px;margin:2px 0 0">Abra o WhatsApp, aperte no microfone, e conte. Quem recebe ouve a sua voz e passa pro papel.</p>
+
+<div class="qr">
+  <img src="qr/contar-uai.png" alt="Código para abrir a conversa da UAI no WhatsApp">
+  <p><b>Ou aponte a câmara</b> deste telemóvel pro quadrado preto: a conversa abre sozinha, com a mensagem já escrita. Pode pedir ajuda a alguém, sem vergonha nenhuma.</p>
+</div>
+
+<p class="rodape">
+<b>A sua história entra na UAI</b> — a biblioteca viva da cidade.<br>
+<b>Nunca com o nome de quem contou.</b> Sempre com a data.<br>
+<b>Nada se apaga:</b> se um dia mudar, corrige-se com a data do lado.<br>
+Página pra ouvir e pra ler alto: <b>uai/contar</b> — e tem um botão «ouvir o que fazer».
+</p>
+<p style="font-size:17px;margin-top:14px">UAI · Passos · a história é da cidade, não de quem guarda.</p>
+</body>
+</html>

@@ -144,5 +144,122 @@ class OQueNaoConta(unittest.TestCase):
         self.assertTrue(any("não está no acervo" in x for x in v["o_que_falta"]), v["o_que_falta"])
 
 
+class AReguaDoEstado(unittest.TestCase):
+    """A régua do estado: floresce · adormeceu · pede cuidado · tem raiz.
+
+    A precedência: o cuidado fala primeiro (porque pede acção); depois o tempo.
+    «tem raiz» é o que sobra — firme, nem fresca nem esquecida.
+    """
+
+    def _f(self, regs):
+        return {"lugar": {"nome": "Praça de Teste"}, "registos": regs}
+
+    def _r(self, tipo="contado", entrou="2026-11-01", **mais):
+        r = {"tipo": tipo, "data": entrou, "entrou": entrou,
+             "texto": "registo de teste", "fonte": {"descricao": "teste"}}
+        r.update(mais)
+        return r
+
+    def test_ficha_com_registo_fresco_de_5_dias_floresce(self):
+        f = self._f([self._r(entrou="2026-11-19")])  # 5 dias
+        self.assertEqual(regua.estado_da_ficha(f, HOJE), "floresce")
+
+    def test_ficha_com_registo_de_60_dias_tem_raiz(self):
+        f = self._f([self._r(entrou="2026-09-25")])  # 60 dias
+        self.assertEqual(regua.estado_da_ficha(f, HOJE), "tem raiz")
+
+    def test_ficha_com_registo_de_100_dias_adormeceu(self):
+        f = self._f([self._r(entrou="2026-08-16")])  # 100 dias
+        self.assertEqual(regua.estado_da_ficha(f, HOJE), "adormeceu")
+
+    def test_ficha_parada_ha_90_dias_exatos_adormeceu(self):
+        f = self._f([self._r(entrou="2026-08-26")])  # 90 dias exactos
+        self.assertEqual(regua.estado_da_ficha(f, HOJE), "adormeceu")
+
+    def test_ficha_parada_ha_30_dias_exatos_floresce(self):
+        f = self._f([self._r(entrou="2026-10-25")])  # 30 dias exactos
+        self.assertEqual(regua.estado_da_ficha(f, HOJE), "floresce")
+
+    def test_ficha_com_prova_por_juntar_pede_cuidado(self):
+        f = self._f([self._r(tipo="verificado",
+                              fonte={"descricao": "vi", "foto": "nao-existe.jpg"})])
+        # A foto não está no acervo → verificado sem prova → pede cuidado
+        self.assertEqual(regua.estado_da_ficha(f, HOJE, ACERVO_VAZIO), "pede cuidado")
+
+    def test_ficha_contestada_pede_cuidado(self):
+        f = self._f([self._r(entrou="2026-11-20"),
+                     self._r(tipo="contesta", entrou="2026-11-21")])
+        self.assertEqual(regua.estado_da_ficha(f, HOJE), "pede cuidado")
+
+    def test_ficha_so_de_leitura_e_broto_pede_cuidado(self):
+        f = self._f([self._r(tipo="leitura", entrou="2026-11-20")])
+        self.assertEqual(regua.estado_da_ficha(f, HOJE), "pede cuidado")
+
+    def test_ficha_so_com_pedidos_pede_cuidado(self):
+        f = self._f([self._r(tipo="pedido", entrou="2026-11-20")])
+        self.assertEqual(regua.estado_da_ficha(f, HOJE), "pede cuidado")
+
+    def test_pede_cuidado_tem_precedencia_sobre_floresce(self):
+        """Uma ficha fresca mas com prova por juntar: pede cuidado ganha."""
+        f = self._f([self._r(tipo="verificado", entrou="2026-11-20",
+                              fonte={"descricao": "vi", "foto": "nao-existe.jpg"})])
+        # 4 dias — seria «floresce», mas a prova falta
+        self.assertEqual(regua.estado_da_ficha(f, HOJE, ACERVO_VAZIO), "pede cuidado")
+
+    def test_pede_cuidado_tem_precedencia_sobre_adormeceu(self):
+        """Uma ficha adormecida mas com contestação: pede cuidado ganha."""
+        f = self._f([self._r(entrou="2026-01-01"),
+                     self._r(tipo="contesta", entrou="2026-02-01")])
+        self.assertEqual(regua.estado_da_ficha(f, HOJE), "pede cuidado")
+
+    def test_ficha_sem_registos_pede_cuidado(self):
+        self.assertEqual(regua.estado_da_ficha({"registos": []}, HOJE), "pede cuidado")
+
+    def test_os_tres_leitores_concordam_no_estado(self):
+        """O mapa, a folha e a mesa do guardião veem o mesmo estado."""
+        f = self._f([self._r(entrou="2026-01-01")])  # adormeceu
+        s = uai.situacao(f, HOJE)
+        self.assertEqual(s["estado_da_ficha"], "adormeceu")
+        # O mapa (via situacao) concorda com a régua directamente
+        self.assertEqual(s["estado_da_ficha"], regua.estado_da_ficha(f, HOJE))
+
+
+class OTempoSozinho(unittest.TestCase):
+    """O tempo sem os cuidados — o que o mapa desenha em volta do pino.
+
+    `estado_da_ficha` dá o veredicto (o cuidado ganha); `tempo_da_ficha` dá só a
+    idade. Uma ficha que pede cuidado mas está adormecida não pode parecer fresca.
+    """
+
+    def _f(self, *regs):
+        return {"lugar": {"nome": "Praça de Teste"}, "registos": list(regs)}
+
+    def _r(self, tipo="contado", entrou="2026-11-01", **mais):
+        r = {"tipo": tipo, "data": entrou, "entrou": entrou,
+             "texto": "registo de teste", "fonte": {"descricao": "teste"}}
+        r.update(mais)
+        return r
+
+    def test_o_mesmo_corte_do_estado_floresce_tem_raiz_adormeceu(self):
+        self.assertEqual(regua.tempo_da_ficha(self._f(self._r(entrou="2026-11-19")), HOJE), "floresce")
+        self.assertEqual(regua.tempo_da_ficha(self._f(self._r(entrou="2026-09-25")), HOJE), "tem raiz")
+        self.assertEqual(regua.tempo_da_ficha(self._f(self._r(entrou="2026-08-16")), HOJE), "adormeceu")
+
+    def test_os_limiares_sao_os_mesmos_do_estado(self):
+        """Um sítio só: o tempo não tem uma segunda régua."""
+        for entrou, esperado in (("2026-08-26", "adormeceu"), ("2026-10-25", "floresce")):
+            f = self._f(self._r(entrou=entrou))
+            self.assertEqual(regua.tempo_da_ficha(f, HOJE), esperado)
+
+    def test_o_cuidado_nao_apaga_a_idade(self):
+        """A ficha que pede cuidado e está adormecida: o pino diz cuidado, a mancha diz adormecida."""
+        f = self._f(self._r(tipo="leitura", entrou="2026-01-01"))
+        self.assertEqual(regua.estado_da_ficha(f, HOJE), "pede cuidado")
+        self.assertEqual(regua.tempo_da_ficha(f, HOJE), "adormeceu")
+
+    def test_sem_datas_nao_ha_tempo(self):
+        self.assertIsNone(regua.tempo_da_ficha({"registos": []}, HOJE))
+
+
 if __name__ == "__main__":
     unittest.main()

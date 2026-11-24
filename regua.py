@@ -109,3 +109,87 @@ def avaliar(registo: dict, fotos: dict | None) -> dict:
 def tem_prova(registo: dict, fotos: dict | None) -> bool:
     """Atalho para um leitor que só quer o sim/não."""
     return artefacto(registo, fotos) is not None
+
+
+# ──────────────────────── a régua do estado ────────────────────────
+
+
+# Os limiares do tempo — decididos pelo grupo «tempo» (Einstein, 24/11/2026):
+DIAS_PARA_FLORESCER = 30   # registo novo ≤ 30 dias: a ficha floresce
+DIAS_PARA_ADORMECER = 90   # sem registo novo ≥ 90 dias: a ficha adormeceu
+# Entre 30 e 90 dias, sem cuidados e com prova: «tem raiz» — firme, nem fresca nem esquecida.
+
+
+def parada_da_ficha(ficha: dict, hoje) -> int | None:
+    """Há quantos dias entrou o último registo — ou None, se a ficha não tem datas.
+
+    Uma só conta para todos os leitores: os limiares do tempo vivem aqui, não em
+    cada sítio que os quer mostrar (mapa, folha, mesa do guardião).
+    """
+    from datetime import date as _date
+
+    hoje = hoje if isinstance(hoje, _date) else _date.fromisoformat(str(hoje))
+    entradas = [_date.fromisoformat(r["entrou"]) for r in (ficha.get("registos") or [])
+                if isinstance(r, dict) and isinstance(r.get("entrou"), str)]
+    if not entradas:
+        return None
+    return (hoje - max(entradas)).days
+
+
+def tempo_da_ficha(ficha: dict, hoje) -> str | None:
+    """Só o tempo, sem os cuidados: `floresce` · `tem raiz` · `adormeceu`.
+
+    `estado_da_ficha` dá o veredicto (o cuidado fala primeiro); esta função diz
+    apenas a idade — é o que o mapa desenha em volta do pino, para que uma ficha
+    que pede cuidado mas está adormecida não pareça fresca. None: sem chão (sem
+    datas), não há tempo a medir.
+    """
+    parada = parada_da_ficha(ficha, hoje)
+    if parada is None:
+        return None
+    if parada >= DIAS_PARA_ADORMECER:
+        return "adormeceu"
+    if parada <= DIAS_PARA_FLORESCER:
+        return "floresce"
+    return "tem raiz"
+
+
+def estado_da_ficha(ficha: dict, hoje, fotos: dict | None = None) -> str:
+    """A régua do estado: UMA função para o mapa, a folha e a mesa do guardião.
+
+    Devolve uma destas quatro palavras — e só uma:
+
+      floresce     — registo novo há ≤ 30 dias e sem pedidos de cuidado
+      adormeceu    — sem registo novo há ≥ 90 dias
+      pede cuidado — tem prova por juntar, contestação, ou ainda é broto / só pedidos
+      tem raiz     — entre 30 e 90 dias, com prova, sem cuidados: estado firme
+
+    A precedência é esta: o cuidado fala primeiro (porque pede acção); depois o tempo.
+    «tem raiz» é o que sobra — uma ficha que não pede nada nem está fresca nem esquecida.
+    """
+    from datetime import date as _date
+
+    hoje = hoje if isinstance(hoje, _date) else _date.fromisoformat(str(hoje))
+    regs = ficha.get("registos") or []
+
+    # ── 1. Os cuidados: o que pede atenção ──
+    pede = False
+
+    # prova por juntar em qualquer registo (selo emprestado)
+    if any(avaliar(r, fotos)["verificado_sem_prova"] for r in regs if isinstance(r, dict)):
+        pede = True
+
+    # contestada: o último registo discorda
+    if regs and isinstance(regs[-1], dict) and regs[-1].get("tipo") == "contesta":
+        pede = True
+
+    # broto ou esperando_resposta: ainda ninguém viu nem contou
+    if not any(isinstance(r, dict) and r.get("tipo") in ("verificado", "contado") for r in regs):
+        pede = True
+
+    if pede:
+        return "pede cuidado"
+
+    # ── 2. O tempo ──
+    tempo = tempo_da_ficha(ficha, hoje)
+    return tempo or "pede cuidado"  # sem datas = sem chão

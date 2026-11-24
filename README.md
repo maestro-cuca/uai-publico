@@ -18,7 +18,7 @@ ao lado de cada coisa.
 | `estatico/` | o mapa, o CSS, o diálogo de quem conta, as escolhas de acessibilidade |
 | `fichas/` | as fichas dos **lugares** — sem dono, com procedência |
 | `gente/` | as fichas das **pessoas** — e a lei que as governa (`LEIAME.md`) |
-| `tests/` | **126 testes** que prendem as leis, não só o código |
+| `tests/` | **171 testes** que prendem as leis, não só o código |
 
 ## Como correr
 
@@ -54,12 +54,16 @@ para leitor de tela, e contraste **medido** (não escolhido a olho).
 
 ## Estado
 
-**Protótipo vivo**, feito em novembro de 2026. Números medidos, não estimados: 126 testes, dois lugares
+**Protótipo vivo**, feito em novembro de 2026. Números medidos, não estimados: 171 testes, dois lugares
 no mapa, uma ficha de pessoa, e a cidade inteira num ficheiro de 3,3 MB.
 
 ## Créditos
 
 **Maestro Cuca** (Passos, MG) — e a casa que ajudou a pensar: dezoito vozes entre deuses gregos,
-filósofos e cientistas, com o Mago à frente. Cada peça deste repositório diz de onde veio.
+filósofos e cientistas, com o Mago à frente.
 
-**Licença:** MIT (ver [`LICENSE`](LICENSE)). A ética, essa, não é MIT: está em `LEI-DA-CASA.md`.
+O que a UAI deve a quem está em **[`CREDITOS.md`](CREDITOS.md)**: as fotografias (Creative Commons,
+autor e licença de cada uma, com o link), o mapa (© colaboradores do OpenStreetMap, base sob ODbL),
+o relevo (Terrain Tiles / SRTM, cortesia do U.S. Geological Survey) e as letras (SIL OFL 1.1).
+
+**Licença:** MIT para o código (ver [`LICENSE`](LICENSE)). A ética, essa, não é MIT: está em `LEI-DA-CASA.md`.

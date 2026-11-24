@@ -1,0 +1,16 @@
+# Aviso ODbL — base geográfica do mapa
+
+O ficheiro `regiao.json` é uma base de dados geográfica derivada do
+OpenStreetMap. É distribuído sob a licença Open Database License (ODbL) 1.0.
+
+© colaboradores do OpenStreetMap — https://www.openstreetmap.org/copyright
+
+Texto completo da ODbL: https://opendatacommons.org/licenses/odbl/1.0/
+
+**O que a ODbL pede:**
+- Atribuir os dados aos colaboradores do OpenStreetMap.
+- Distribuir esta base (ou derivadas) sob a mesma licença ODbL.
+- Manter este aviso junto da base derivada.
+
+O mapa que a UAI desenha a partir desta base é uma Obra Produzida (Produced
+Work) — leva atribuição, não contamina as fichas nem o resto do site.
